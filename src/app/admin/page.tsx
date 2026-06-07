@@ -1,0 +1,118 @@
+'use client';
+import { useEffect, useState } from 'react';
+import axios from 'axios';
+import Link from 'next/link';
+import { CurrencyRupeeIcon, ShoppingBagIcon, UsersIcon, CubeIcon } from '@heroicons/react/24/outline';
+
+interface Stats {
+  totalOrders: number;
+  totalUsers: number;
+  totalProducts: number;
+  totalRevenue: number;
+}
+
+interface Order {
+  _id: string;
+  total: number;
+  status: string;
+  createdAt: string;
+  items: { name: string }[];
+}
+
+const STATUS_COLORS: Record<string, string> = {
+  pending: 'bg-amber-100 text-amber-700',
+  confirmed: 'bg-blue-100 text-blue-700',
+  processing: 'bg-purple-100 text-purple-700',
+  shipped: 'bg-indigo-100 text-indigo-700',
+  delivered: 'bg-emerald-100 text-emerald-700',
+  cancelled: 'bg-red-100 text-red-700',
+};
+
+export default function AdminDashboard() {
+  const [stats, setStats] = useState<Stats | null>(null);
+  const [recentOrders, setRecentOrders] = useState<Order[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    axios.get('/api/admin/stats')
+      .then((r) => {
+        setStats(r.data.stats);
+        setRecentOrders(r.data.recentOrders || []);
+      })
+      .catch(console.error)
+      .finally(() => setLoading(false));
+  }, []);
+
+  const statCards = [
+    { label: 'Total Revenue', value: stats ? `₹${stats.totalRevenue.toLocaleString()}` : '—', icon: CurrencyRupeeIcon, color: 'bg-rose-100 text-rose-500', href: '/admin/orders' },
+    { label: 'Total Orders', value: stats?.totalOrders ?? '—', icon: ShoppingBagIcon, color: 'bg-blue-100 text-blue-500', href: '/admin/orders' },
+    { label: 'Products', value: stats?.totalProducts ?? '—', icon: CubeIcon, color: 'bg-purple-100 text-purple-500', href: '/admin/products' },
+    { label: 'Customers', value: stats?.totalUsers ?? '—', icon: UsersIcon, color: 'bg-emerald-100 text-emerald-500', href: '/admin/customers' },
+  ];
+
+  return (
+    <div>
+      <div className="mb-8">
+        <h1 className="text-2xl font-bold text-gray-900 font-serif">Dashboard</h1>
+        <p className="text-gray-500 text-sm mt-1">Welcome back! Here&apos;s what&apos;s happening at Ziya.</p>
+      </div>
+
+      {/* Stat cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        {statCards.map((card) => {
+          const Icon = card.icon;
+          return (
+            <Link key={card.label} href={card.href}>
+              <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 hover:shadow-md transition-shadow">
+                <div className="flex items-start justify-between mb-3">
+                  <div className={`p-2.5 rounded-xl ${card.color}`}>
+                    <Icon className="w-5 h-5" />
+                  </div>
+                </div>
+                <p className="text-2xl font-bold text-gray-900">
+                  {loading ? <span className="inline-block w-16 h-7 bg-gray-100 rounded-lg animate-pulse" /> : card.value}
+                </p>
+                <p className="text-xs text-gray-500 mt-0.5">{card.label}</p>
+              </div>
+            </Link>
+          );
+        })}
+      </div>
+
+      {/* Recent orders */}
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm">
+        <div className="flex items-center justify-between p-5 border-b border-gray-100">
+          <h2 className="font-bold text-gray-800">Recent Orders</h2>
+          <Link href="/admin/orders" className="text-sm text-rose-400 hover:text-rose-500 font-medium">View all →</Link>
+        </div>
+        <div className="divide-y divide-gray-50">
+          {loading ? (
+            Array.from({ length: 5 }).map((_, i) => (
+              <div key={i} className="p-4 flex gap-3">
+                <div className="h-4 bg-gray-100 rounded w-24 animate-pulse" />
+                <div className="h-4 bg-gray-100 rounded flex-1 animate-pulse" />
+                <div className="h-4 bg-gray-100 rounded w-16 animate-pulse" />
+              </div>
+            ))
+          ) : recentOrders.length === 0 ? (
+            <div className="p-8 text-center text-gray-400 text-sm">No orders yet</div>
+          ) : recentOrders.map((order) => (
+            <Link key={order._id} href={`/admin/orders?id=${order._id}`}>
+              <div className="p-4 hover:bg-gray-50 transition-colors flex items-center gap-4">
+                <span className="font-mono text-xs text-gray-400 w-20">#{order._id.slice(-6).toUpperCase()}</span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm text-gray-700 truncate">{order.items.map(i => i.name).join(', ')}</p>
+                  <p className="text-xs text-gray-400">{new Date(order.createdAt).toLocaleDateString('en-IN')}</p>
+                </div>
+                <span className={`text-xs font-semibold px-2.5 py-1 rounded-full capitalize ${STATUS_COLORS[order.status] || 'bg-gray-100 text-gray-600'}`}>
+                  {order.status}
+                </span>
+                <span className="font-bold text-gray-900 text-sm">₹{order.total.toLocaleString()}</span>
+              </div>
+            </Link>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}

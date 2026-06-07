@@ -2,25 +2,249 @@
 
 :root {
   --background: #ffffff;
-  --foreground: #171717;
+  --foreground: #1a1a2e;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+* {
+  box-sizing: border-box;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  scroll-behavior: smooth;
 }
 
 body {
-  background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--background);
+  font-family: system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
 }
+
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: #f9fafb; }
+::-webkit-scrollbar-thumb { background: #fda4af; border-radius: 10px; }
+
+.line-clamp-1 { overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 1; }
+.line-clamp-2 { overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+.line-clamp-3 { overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; }
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-in-up { animation: fadeInUp 0.6s ease-out forwards; }
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+.animate-float { animation: float 3s ease-in-out infinite; }
+
+.hide-scrollbar { scrollbar-width: none; -ms-overflow-style: none; }
+.hide-scrollbar::-webkit-scrollbar { display: none; }
+
+.hero-section {
+  min-height: calc(100svh - 4rem);
+  min-height: calc(100dvh - 4rem);
+}
+
+/* Logo contrast fix — makes faint logos more visible on white backgrounds */
+.logo-filter { filter: brightness(0.6) saturate(1.6) contrast(1.3); }
+
+/* Staggered bounce delays for loading dots */
+.bounce-delay-1 { animation-delay: 0.1s; }
+.bounce-delay-2 { animation-delay: 0.2s; }
+
+/* Flame flicker */
+@keyframes flameFlicker {
+  0%, 100% { transform: scaleY(1) rotate(-4deg); filter: brightness(1); }
+  20% { transform: scaleY(1.12) rotate(4deg); filter: brightness(1.15); }
+  40% { transform: scaleY(0.93) rotate(-2deg); filter: brightness(0.95); }
+  60% { transform: scaleY(1.08) rotate(3deg); filter: brightness(1.1); }
+  80% { transform: scaleY(0.97) rotate(-3deg); filter: brightness(1); }
+}
+.flame-icon { display: inline-block; animation: flameFlicker 1.4s ease-in-out infinite; transform-origin: bottom center; }
+.flame-icon-slow { display: inline-block; animation: flameFlicker 3s ease-in-out infinite; transform-origin: bottom center; }
+
+/* Sparkle spin + pulse */
+@keyframes sparkleSpin {
+  0%   { transform: rotate(0deg) scale(1); opacity: 1; }
+  25%  { transform: rotate(90deg) scale(1.25); opacity: 0.8; }
+  50%  { transform: rotate(180deg) scale(1); opacity: 1; }
+  75%  { transform: rotate(270deg) scale(1.15); opacity: 0.85; }
+  100% { transform: rotate(360deg) scale(1); opacity: 1; }
+}
+.sparkle-icon { display: inline-block; animation: sparkleSpin 3s linear infinite; }
+.sparkle-icon-delay { display: inline-block; animation: sparkleSpin 4s linear infinite; animation-delay: 1.2s; }
+
+/* Staggered skeleton pulse delays */
+.pulse-delay-1 { animation-delay: 0.10s; }
+.pulse-delay-2 { animation-delay: 0.20s; }
+.pulse-delay-3 { animation-delay: 0.30s; }
+
+/* Live dot pulse */
+@keyframes livePulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.45; transform: scale(0.8); }
+}
+.live-dot { animation: livePulse 1s ease-in-out infinite; }
+
+/* Trending badge shimmer */
+@keyframes shimmer {
+  0%   { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+.trending-shimmer {
+  background: linear-gradient(90deg, #f43f5e 25%, #fb7185 50%, #f43f5e 75%);
+  background-size: 200% auto;
+  animation: shimmer 2.5s linear infinite;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Hero image — portrait crop */
+.hero-image {
+  aspect-ratio: 3 / 4;
+  object-fit: cover;
+}
+
+/* Cloud-like radial fade overlay on hero image */
+.hero-cloud-overlay {
+  background: radial-gradient(
+    ellipse at center,
+    transparent 48%,
+    rgba(255, 241, 242, 0.35) 65%,
+    rgba(255, 241, 242, 0.70) 82%,
+    rgba(255, 241, 242, 0.92) 100%
+  );
+}
+
+/* Truck drive — nudges right then snaps back, suggesting motion */
+@keyframes truckDrive {
+  0%   { transform: translateX(0); }
+  30%  { transform: translateX(4px); }
+  55%  { transform: translateX(-2px); }
+  75%  { transform: translateX(3px); }
+  100% { transform: translateX(0); }
+}
+.truck-icon { display: inline-block; animation: truckDrive 1.8s ease-in-out infinite; }
+
+/* Newsletter section */
+.newsletter-bg {
+  background: linear-gradient(135deg, #0f0f1a 0%, #1a1a2e 40%, #1f0d1a 100%);
+}
+.newsletter-watermark {
+  -webkit-text-stroke: 1.5px rgba(244, 63, 94, 0.12);
+  color: transparent;
+}
+.newsletter-card-border {
+  background: linear-gradient(135deg, rgba(244,63,94,0.5) 0%, rgba(244,63,94,0.05) 50%, rgba(244,63,94,0.3) 100%);
+}
+.newsletter-submit-btn {
+  background: linear-gradient(135deg, #f43f5e 0%, #e11d48 50%, #f43f5e 100%);
+  background-size: 200% auto;
+  animation: shimmer 3s linear infinite;
+}
+
+/* Liquid glass effect for dropdowns and panels */
+.liquid-glass {
+  background: rgba(255, 255, 255, 0.72);
+  -webkit-backdrop-filter: blur(24px) saturate(200%);
+  backdrop-filter: blur(24px) saturate(200%);
+  border: 1px solid rgba(255, 255, 255, 0.45);
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.10),
+    0 2px 8px rgba(0, 0, 0, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.70);
+}
+
+/* Profile hero mesh gradient */
+.profile-hero-bg {
+  background:
+    radial-gradient(ellipse at 10% 20%, rgba(251,113,133,0.55) 0%, transparent 55%),
+    radial-gradient(ellipse at 85% 10%, rgba(244,63,94,0.40) 0%, transparent 50%),
+    radial-gradient(ellipse at 60% 90%, rgba(236,72,153,0.35) 0%, transparent 50%),
+    linear-gradient(135deg, #1c0a14 0%, #2d0a20 40%, #1a0d1d 100%);
+}
+
+/* Avatar pulse ring — opacity+transform only (GPU composited, no paint/layout) */
+@keyframes avatarRing {
+  0%, 100% { opacity: 0.7; transform: scale(1); }
+  50%       { opacity: 0;   transform: scale(1.45); }
+}
+.avatar-ring { animation: avatarRing 2.4s ease-out infinite; }
+
+/* Stat card glass */
+.stat-glass {
+  background: rgba(255,255,255,0.10);
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+  backdrop-filter: blur(16px) saturate(180%);
+  border: 1px solid rgba(255,255,255,0.18);
+}
+
+/* Floating label input */
+.fl-wrap { position: relative; }
+.fl-wrap input { padding-top: 1.25rem; padding-bottom: 0.5rem; }
+.fl-wrap label {
+  position: absolute; left: 2.75rem; top: 50%; transform: translateY(-50%);
+  font-size: 0.8125rem; color: #9ca3af; pointer-events: none;
+  transition: all 0.2s ease;
+}
+.fl-wrap input:focus ~ label,
+.fl-wrap input:not(:placeholder-shown) ~ label {
+  top: 0.55rem; transform: translateY(0); font-size: 0.625rem;
+  font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: #f43f5e;
+}
+
+/* Wishlist card hover slide-up */
+.wish-card-overlay {
+  transform: translateY(100%);
+  transition: transform 0.35s cubic-bezier(0.34,1.56,0.64,1);
+}
+.group:hover .wish-card-overlay { transform: translateY(0); }
+
+/* Gradient border address card */
+.addr-card {
+  border-left: 3px solid transparent;
+  background-clip: padding-box;
+  position: relative;
+}
+.addr-card::before {
+  content: '';
+  position: absolute; inset: 0; left: -3px;
+  border-radius: inherit;
+  background: linear-gradient(160deg, #f43f5e, #ec4899);
+  z-index: -1;
+  border-radius: 24px;
+}
+
+/* Stagger fade-in for grid items */
+@keyframes staggerIn {
+  from { opacity: 0; transform: translateY(18px) scale(0.96); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+.stagger-item { animation: staggerIn 0.45s ease-out both; }
+.stagger-item:nth-child(1)  { animation-delay: 0.05s; }
+.stagger-item:nth-child(2)  { animation-delay: 0.10s; }
+.stagger-item:nth-child(3)  { animation-delay: 0.15s; }
+.stagger-item:nth-child(4)  { animation-delay: 0.20s; }
+.stagger-item:nth-child(5)  { animation-delay: 0.25s; }
+.stagger-item:nth-child(6)  { animation-delay: 0.30s; }
+.stagger-item:nth-child(7)  { animation-delay: 0.35s; }
+.stagger-item:nth-child(8)  { animation-delay: 0.40s; }
+
+/* Discount percent badge */
+.discount-ribbon {
+  background: linear-gradient(135deg, #f43f5e, #be123c);
+  clip-path: polygon(0 0, 100% 0, 100% 75%, 50% 100%, 0 75%);
+}
+
+/* Hero dot-grid overlay */
+.hero-dot-grid {
+  background-image: radial-gradient(rgba(255,255,255,0.6) 1px, transparent 1px);
+  background-size: 28px 28px;
+}
+
+/* Wishlist card / overlay transition duration */
+.duration-400 { transition-duration: 400ms; }
