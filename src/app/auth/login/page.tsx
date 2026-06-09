@@ -16,10 +16,10 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 
 const floatingBadges = [
-  { emoji: '🌸', label: 'Korean Style', top: '14%', left: '8%', delay: 0.6 },
-  { emoji: '✨', label: 'New Arrivals', top: '68%', left: '5%', delay: 0.9 },
-  { emoji: '💝', label: 'Members Only', top: '38%', right: '6%', delay: 0.75 },
-  { emoji: '🎀', label: 'Exclusive Deals', top: '80%', right: '8%', delay: 1.0 },
+  { emoji: '🌸', label: 'Korean Style',   top: '6%',  left: '5%',  delay: 0.6  },
+  { emoji: '✨', label: 'New Arrivals',   top: '88%', left: '5%',  delay: 0.9  },
+  { emoji: '💝', label: 'Members Only',  top: '8%',  right: '4%', delay: 0.75 },
+  { emoji: '🎀', label: 'Exclusive Deals', top: '88%', right: '4%', delay: 1.0  },
 ];
 
 const features = [
@@ -150,14 +150,14 @@ function LoginContent() {
         {floatingBadges.map((b, i) => (
           <motion.div
             key={i}
-            className="absolute flex items-center gap-2 bg-white/10 backdrop-blur-md border border-white/15 rounded-full px-3.5 py-2 text-white text-xs font-semibold shadow-xl"
+            className="absolute z-[1] flex items-center gap-2 bg-white/8 backdrop-blur-sm border border-white/10 rounded-full px-3 py-1.5 text-white/75 text-[11px] font-semibold shadow-md"
             style={{ top: b.top, left: b.left, right: (b as { right?: string }).right }}
-            initial={{ opacity: 0, scale: 0.7, y: 10 }}
-            animate={{ opacity: 1, scale: 1, y: [0, -6, 0] }}
+            initial={{ opacity: 0, scale: 0.8, y: 10 }}
+            animate={{ opacity: 1, scale: 1, y: [0, -3, 0] }}
             transition={{
               opacity: { delay: b.delay, duration: 0.5 },
               scale: { delay: b.delay, duration: 0.5, ease: [0.34, 1.56, 0.64, 1] },
-              y: { delay: b.delay + 0.5, duration: 3 + i * 0.4, repeat: Infinity, ease: 'easeInOut' },
+              y: { delay: b.delay + 0.5, duration: 4 + i * 0.4, repeat: Infinity, ease: 'easeInOut' },
             }}
           >
             <span>{b.emoji}</span>
@@ -167,6 +167,7 @@ function LoginContent() {
 
         {/* Logo */}
         <motion.div
+          className="relative z-20"
           initial={{ opacity: 0, y: -16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3, duration: 0.5 }}
@@ -185,7 +186,7 @@ function LoginContent() {
 
         {/* Center content */}
         <motion.div
-          className="relative z-10"
+          className="relative z-20"
           initial={{ opacity: 0, y: 24 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.45, duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
@@ -224,7 +225,7 @@ function LoginContent() {
 
         {/* Bottom tagline */}
         <motion.p
-          className="text-xs text-gray-600 relative z-10"
+          className="text-xs text-gray-600 relative z-20"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 1, duration: 0.5 }}

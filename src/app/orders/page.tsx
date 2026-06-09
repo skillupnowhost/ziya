@@ -40,14 +40,14 @@ export default function OrdersPage() {
   }, [user, router]);
 
   if (loading) return (
-    <div className="max-w-4xl mx-auto px-4 py-8 space-y-4">
+    <div className="max-w-5xl mx-auto px-4 sm:px-6 md:px-8 py-8 space-y-4">
       {[1,2,3].map(i => <div key={i} className="h-28 bg-gray-100 rounded-2xl animate-pulse" />)}
     </div>
   );
 
   return (
     <motion.div
-      className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8"
+      className="max-w-5xl mx-auto px-4 sm:px-6 md:px-8 lg:px-10 py-8"
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}

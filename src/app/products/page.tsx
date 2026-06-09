@@ -52,8 +52,6 @@ const SORT_OPTIONS = [
   { label: 'Top Rated',         value: 'rating-desc'    },
   { label: 'Most Popular',      value: 'reviewCount-desc'},
 ];
-const BRANDS = ['Ziya Collection','Seoul Minimal','K-Fashion Hub','Hanbok House','Vintage Seoul'];
-
 const CATEGORY_META: Record<string,{gradient:string;textColor:string;emoji:string;desc:string}> = {
   All:         { gradient:'from-pink-100 via-rose-100 to-fuchsia-100',  textColor:'text-rose-700', emoji:'🛍️', desc:'Explore our curated Korean fashion collection' },
   Dresses:     { gradient:'from-rose-100 via-pink-100 to-rose-200',     textColor:'text-rose-700', emoji:'👗', desc:'Elegant dresses for every occasion' },
@@ -167,10 +165,10 @@ function SortDropdown({ value, onChange }: { value: string; onChange: (v: string
 /* ─── interfaces ─── */
 interface Filters {
   priceMin: string; priceMax: string; rating: number;
-  brands: string[]; trending: boolean; isNew: boolean; inStockOnly: boolean;
+  trending: boolean; isNew: boolean; inStockOnly: boolean;
 }
 const DEFAULT_FILTERS: Filters = {
-  priceMin:'', priceMax:'', rating:0, brands:[], trending:false, isNew:false, inStockOnly:false,
+  priceMin:'', priceMax:'', rating:0, trending:false, isNew:false, inStockOnly:false,
 };
 
 /* ─── CollapsibleSection ─── */
@@ -207,14 +205,7 @@ function SidebarFilters({ activeCategory, filters, setFilters, onClearAll, hideH
   activeCategory:string; filters:Filters; setFilters:(f:Filters)=>void; onClearAll:()=>void; hideHeader?:boolean;
 }) {
   const hasActiveFilters = filters.priceMin || filters.priceMax || filters.rating > 0 ||
-    filters.brands.length > 0 || filters.trending || filters.isNew || filters.inStockOnly;
-
-  const toggleBrand = (brand: string) => {
-    const updated = filters.brands.includes(brand)
-      ? filters.brands.filter((b) => b !== brand)
-      : [...filters.brands, brand];
-    setFilters({ ...filters, brands: updated });
-  };
+    filters.trending || filters.isNew || filters.inStockOnly;
 
   return (
     <aside className="w-full">
@@ -441,35 +432,6 @@ function SidebarFilters({ activeCategory, filters, setFilters, onClearAll, hideH
         </div>
       </CollapsibleSection>
 
-      <CollapsibleSection title="Brand" defaultOpen={false}>
-        <div className="space-y-1.5">
-          {BRANDS.map((brand) => (
-            <motion.label key={brand} className="flex items-center gap-2.5 cursor-pointer group" whileHover={{ x: 2 }}>
-              <motion.div onClick={() => toggleBrand(brand)}
-                className={`w-4 h-4 rounded flex-shrink-0 border-2 transition-all duration-150 flex items-center justify-center cursor-pointer ${
-                  filters.brands.includes(brand) ? 'bg-pink-300 border-pink-300' : 'border-pink-200 group-hover:border-pink-300'
-                }`}
-                animate={{ scale: filters.brands.includes(brand) ? [1,1.25,1] : 1 }}
-                transition={{ duration: 0.25 }}
-              >
-                <AnimatePresence>
-                  {filters.brands.includes(brand) && (
-                    <motion.svg key="check" className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}
-                      initial={{ scale: 0, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0, opacity: 0 }} transition={{ duration: 0.18 }}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                    </motion.svg>
-                  )}
-                </AnimatePresence>
-              </motion.div>
-              <span onClick={() => toggleBrand(brand)}
-                className={`text-sm transition-colors cursor-pointer ${filters.brands.includes(brand) ? 'text-pink-500 font-medium' : 'text-gray-600 group-hover:text-gray-900'}`}>
-                {brand}
-              </span>
-            </motion.label>
-          ))}
-        </div>
-      </CollapsibleSection>
-
       <CollapsibleSection title="Special">
         <div className="space-y-1.5">
           {[
@@ -615,9 +577,8 @@ function ProductsContent() {
       const data = res.data;
       let fetched: Product[] = data.products || [];
 
-      if (filters.rating > 0)       fetched = fetched.filter((p) => p.rating    >= filters.rating);
-      if (filters.brands.length > 0) fetched = fetched.filter((p) => p.brand && filters.brands.includes(p.brand));
-      if (filters.inStockOnly)       fetched = fetched.filter((p) => p.stock > 0);
+      if (filters.rating > 0)  fetched = fetched.filter((p) => p.rating >= filters.rating);
+      if (filters.inStockOnly) fetched = fetched.filter((p) => p.stock > 0);
 
       setProducts(fetched);
       setTotal(data.pagination?.total || 0);
@@ -646,7 +607,7 @@ function ProductsContent() {
 
   const activeFilterCount = [
     filters.priceMin || filters.priceMax, filters.rating > 0,
-    filters.brands.length > 0, filters.trending, filters.isNew, filters.inStockOnly,
+    filters.trending, filters.isNew, filters.inStockOnly,
   ].filter(Boolean).length;
 
   /* active-chip list for AnimatePresence */
@@ -657,7 +618,6 @@ function ProductsContent() {
   if (filters.trending)    chips.push({ id:'trending',  label:'🔥 Trending',             clear:() => setFilters({...filters,trending:false})    });
   if (filters.isNew)       chips.push({ id:'new',       label:'✨ New Arrivals',          clear:() => setFilters({...filters,isNew:false})       });
   if (filters.inStockOnly) chips.push({ id:'stock',     label:'✅ In Stock',             clear:() => setFilters({...filters,inStockOnly:false}) });
-  filters.brands.forEach((b) => chips.push({ id:`brand-${b}`, label: b, clear:() => setFilters({...filters,brands:filters.brands.filter((x)=>x!==b)}) }));
 
   const gridKey = `${page}-${sort}-${category}-${search}-${JSON.stringify(filters)}`;
 
@@ -726,7 +686,7 @@ function ProductsContent() {
 
           {/* ── DESKTOP SIDEBAR ── */}
           <motion.div
-            className="hidden lg:block w-52 xl:w-56 flex-shrink-0"
+            className="hidden md:block w-48 lg:w-52 xl:w-56 2xl:w-64 flex-shrink-0"
             initial={{ opacity:0, x:-28 }}
             animate={{ opacity:1, x:0   }}
             transition={{ duration:0.5, delay:0.18, ease:[0.22,1,0.36,1] }}
@@ -750,7 +710,7 @@ function ProductsContent() {
                 <motion.button
                   type="button"
                   onClick={() => setSidebarOpen(true)}
-                  className="lg:hidden flex items-center gap-2 px-4 py-2 bg-white border border-pink-200 rounded-xl text-sm text-gray-700 hover:text-pink-500 hover:border-pink-300 transition-all shadow-sm"
+                  className="md:hidden flex items-center gap-2 px-4 py-2 bg-white border border-pink-200 rounded-xl text-sm text-gray-700 hover:text-pink-500 hover:border-pink-300 transition-all shadow-sm"
                   whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.96 }}
                 >
                   <motion.span animate={activeFilterCount > 0 ? { rotate: [-10,10,-5,5,0] } : {}} transition={{ duration: 0.4 }}>
@@ -771,7 +731,7 @@ function ProductsContent() {
 
                 {/* Result count desktop */}
                 <motion.p
-                  className="hidden lg:block text-sm text-gray-500"
+                  className="hidden md:block text-sm text-gray-500"
                   key={total}
                   initial={{ opacity:0 }} animate={{ opacity:1 }} transition={{ duration:0.3 }}
                 >
@@ -872,7 +832,7 @@ function ProductsContent() {
                   transition={{ duration:0.2 }}
                   className={viewMode === 'list'
                     ? 'space-y-3'
-                    : 'grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 sm:gap-5'
+                    : 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 sm:gap-5'
                   }
                 >
                   {Array.from({ length: LIMIT }).map((_, i) => (
@@ -985,7 +945,7 @@ function ProductsContent() {
                 /* ── Grid view ── */
                 <motion.div
                   key={`grid-${gridKey}`}
-                  className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 sm:gap-5"
+                  className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 sm:gap-5"
                   variants={gridVariants}
                   initial="hidden" animate="show" exit="exit"
                   transition={{ staggerChildren: 0.05, duration: 0.2 }}
@@ -1023,14 +983,14 @@ function ProductsContent() {
           <>
             <motion.div
               key="overlay"
-              className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40 lg:hidden"
+              className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40 md:hidden"
               initial={{ opacity:0 }} animate={{ opacity:1 }} exit={{ opacity:0 }}
               transition={{ duration:0.25 }}
               onClick={() => setSidebarOpen(false)}
             />
             <motion.div
               key="drawer"
-              className="fixed top-0 left-0 h-full w-80 max-w-[85vw] bg-white z-50 lg:hidden shadow-2xl"
+              className="fixed top-0 left-0 h-full w-80 max-w-[85vw] bg-white z-50 md:hidden shadow-2xl"
               initial={{ x:'-100%' }} animate={{ x:0 }} exit={{ x:'-100%' }}
               transition={{ type:'spring', stiffness:320, damping:32 }}
             >

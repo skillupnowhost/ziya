@@ -208,7 +208,7 @@ export default function Footer() {
           <div className="absolute bottom-0 right-1/4 w-56 h-56 bg-pink-500/10 rounded-full blur-[60px] pointer-events-none" />
           <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-rose-500/40 to-transparent" />
 
-          <div className="relative max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="relative max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 xl:px-12">
             <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-8">
               <motion.div
                 className="lg:max-w-xs"
@@ -285,7 +285,7 @@ export default function Footer() {
         </div>
 
         {/* Main footer */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 py-12">
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
 
             {/* Brand */}

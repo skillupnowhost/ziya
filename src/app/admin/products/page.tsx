@@ -9,11 +9,16 @@ import { motion, AnimatePresence } from 'framer-motion';
 interface Product {
   _id: string;
   name: string;
+  description?: string;
   category: string;
   price: number;
   discountPrice?: number;
   stock: number;
   images: string[];
+  colors?: string[];
+  sizes?: string[];
+  sku?: string;
+  tags?: string[];
   isActive: boolean;
   isFeatured: boolean;
   isTrending: boolean;
@@ -243,20 +248,21 @@ export default function AdminProductsPage() {
     setEditId(p._id);
     setForm({
       name: p.name,
-      description: '',
+      description: p.description || '',
       category: p.category,
       price: String(p.price),
       discountPrice: String(p.discountPrice || ''),
       stock: String(p.stock),
-      colors: '', sku: '',
+      colors: p.colors?.join(', ') || '',
+      sku: p.sku || '',
       isFeatured: p.isFeatured,
       isNew: p.isNewProduct,
       isTrending: p.isTrending,
       isActive: p.isActive,
     });
     setImages(p.images || []);
-    setSelectedSizes([]);
-    setTags(CATEGORY_TAGS[p.category]?.slice(0, 3) || []);
+    setSelectedSizes(p.sizes || []);
+    setTags(p.tags || CATEGORY_TAGS[p.category]?.slice(0, 3) || []);
     setShowForm(true);
   };
 
