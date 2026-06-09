@@ -5,6 +5,7 @@ import ProductCard from '@/components/ProductCard';
 import { ChevronLeftIcon, ChevronRightIcon, FireIcon } from '@heroicons/react/24/solid';
 import { ArrowRightIcon } from '@heroicons/react/24/outline';
 import Link from 'next/link';
+import { motion } from 'framer-motion';
 
 interface Product {
   _id: string;
@@ -58,13 +59,17 @@ export default function TrendingSection() {
 
   return (
     <section className="py-10 bg-gradient-to-b from-rose-50/70 via-pink-50/30 to-white relative overflow-hidden">
-
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
 
         {/* Header */}
-        <div className="flex items-end justify-between mb-8 gap-4 flex-wrap">
+        <motion.div
+          className="flex items-end justify-between mb-8 gap-4 flex-wrap"
+          initial={{ opacity: 0, y: 24 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: '-60px' }}
+          transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
+        >
           <div>
-            {/* Sub-label row with LIVE badge */}
             <div className="flex items-center gap-2.5 mb-2">
               <p className="text-rose-400 text-xs tracking-[0.35em] uppercase font-semibold">Popular</p>
               <span className="flex items-center gap-1 bg-rose-500 text-white text-[10px] font-bold px-2.5 py-1 rounded-full shadow-md shadow-rose-400/30">
@@ -72,8 +77,6 @@ export default function TrendingSection() {
                 LIVE
               </span>
             </div>
-
-            {/* Title row */}
             <div className="flex items-center gap-3">
               <FireIcon className="flame-icon w-8 h-8 text-rose-500 shrink-0" />
               <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 font-serif">
@@ -83,7 +86,6 @@ export default function TrendingSection() {
             </div>
           </div>
 
-          {/* Controls */}
           <div className="flex items-center gap-2.5">
             <button
               type="button"
@@ -117,7 +119,7 @@ export default function TrendingSection() {
               <ArrowRightIcon className="w-3.5 h-3.5 transition-transform duration-200 group-hover:translate-x-1" />
             </Link>
           </div>
-        </div>
+        </motion.div>
 
         {/* Scroll progress indicators */}
         <div className="flex gap-1.5 mb-5 sm:hidden">
@@ -139,19 +141,20 @@ export default function TrendingSection() {
             ))}
           </div>
         ) : (
-          <div
+          <motion.div
             ref={scrollRef}
             className="flex gap-4 overflow-x-auto pb-4 scroll-smooth hide-scrollbar"
+            initial={{ opacity: 0, x: 30 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true, margin: '-40px' }}
+            transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
           >
             {products.map((product) => (
-              <div
-                key={product._id}
-                className="flex-none w-40 sm:w-48"
-              >
+              <div key={product._id} className="flex-none w-40 sm:w-48">
                 <ProductCard product={product} />
               </div>
             ))}
-          </div>
+          </motion.div>
         )}
 
         {/* Mobile view-all link */}

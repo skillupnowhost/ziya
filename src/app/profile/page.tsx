@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import Link from 'next/link';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   UserCircleIcon,
   PlusIcon,
@@ -120,7 +121,12 @@ export default function ProfilePage() {
     <div className="min-h-screen bg-gray-50/50">
 
       {/* ═══════════════════════════ HERO ═══════════════════════════ */}
-      <div className="relative profile-hero-bg overflow-hidden">
+      <motion.div
+        className="relative profile-hero-bg overflow-hidden"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.5 }}
+      >
 
         {/* Decorative orbs */}
         <div className="pointer-events-none absolute -top-24 -right-24 w-96 h-96 rounded-full bg-rose-500/20 blur-3xl" />
@@ -174,21 +180,31 @@ export default function ProfilePage() {
           </div>
 
           {/* Stats row */}
-          <div className="grid grid-cols-3 gap-3 mt-8 max-w-md mx-auto sm:mx-0">
+          <motion.div
+            className="grid grid-cols-3 gap-3 mt-8 max-w-md mx-auto sm:mx-0"
+            initial="hidden"
+            animate="show"
+            variants={{ hidden: {}, show: { transition: { staggerChildren: 0.1, delayChildren: 0.3 } } }}
+          >
             {[
               { label: 'Saved Addresses', value: addresses.length, icon: <MapPinIcon className="w-4 h-4" /> },
               { label: 'Wishlist Items',  value: wishlistItems.length, icon: <HeartSolid className="w-4 h-4" /> },
-              { label: 'Member Since',   value: '2024', icon: <StarIcon className="w-4 h-4" /> },
+              { label: 'Member Since',   value: '2026', icon: <StarIcon className="w-4 h-4" /> },
             ].map((s) => (
-              <div key={s.label} className="stat-glass rounded-2xl p-3 sm:p-4 text-center group hover:bg-white/20 transition-colors cursor-default">
+              <motion.div
+                key={s.label}
+                className="stat-glass rounded-2xl p-3 sm:p-4 text-center group hover:bg-white/20 transition-colors cursor-default"
+                variants={{ hidden: { opacity: 0, y: 16, scale: 0.9 }, show: { opacity: 1, y: 0, scale: 1 } }}
+                transition={{ duration: 0.45, ease: [0.34, 1.56, 0.64, 1] }}
+              >
                 <div className="flex justify-center mb-1 text-rose-300/70">{s.icon}</div>
                 <p className="text-xl sm:text-2xl font-black text-white tabular-nums">{s.value}</p>
                 <p className="text-[10px] text-white/50 mt-0.5 leading-tight">{s.label}</p>
-              </div>
+              </motion.div>
             ))}
-          </div>
+          </motion.div>
         </div>
-      </div>
+      </motion.div>
 
       {/* ═══════════════════════════ BODY ═══════════════════════════ */}
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 -mt-12 pb-20">
@@ -222,8 +238,16 @@ export default function ProfilePage() {
         </div>
 
         {/* ── PROFILE TAB ─────────────────────────────────────────── */}
+        <AnimatePresence mode="wait">
         {activeTab === 'profile' && (
-          <div className="grid grid-cols-1 lg:grid-cols-5 gap-5 animate-fade-in-up">
+          <motion.div
+            key="profile"
+            className="grid grid-cols-1 lg:grid-cols-5 gap-5"
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+          >
 
             {/* Form — takes 3 cols */}
             <div className="lg:col-span-3 bg-white rounded-3xl border border-gray-100 shadow-sm shadow-gray-100/80 p-6 sm:p-8">
@@ -360,17 +384,24 @@ export default function ProfilePage() {
                 <p className="text-lg font-black text-white leading-snug">{user?.name || 'Fashion Fan'}</p>
                 <p className="text-[11px] text-white/40 mt-0.5 truncate">{user?.email}</p>
                 <div className="mt-4 pt-4 border-t border-white/10 flex items-center justify-between">
-                  <span className="text-[10px] text-white/40 uppercase tracking-wider">Member Since 2024</span>
+                  <span className="text-[10px] text-white/40 uppercase tracking-wider">Member Since 2026</span>
                   <CheckBadgeIcon className="w-5 h-5 text-emerald-400" />
                 </div>
               </div>
             </div>
-          </div>
+          </motion.div>
         )}
 
         {/* ── ADDRESSES TAB ───────────────────────────────────────── */}
         {activeTab === 'addresses' && (
-          <div className="space-y-4 animate-fade-in-up">
+          <motion.div
+            key="addresses"
+            className="space-y-4"
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+          >
 
             {addresses.length === 0 && !showAddForm && (
               <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-14 text-center">
@@ -383,9 +414,12 @@ export default function ProfilePage() {
             )}
 
             {addresses.map((addr, i) => (
-              <div
+              <motion.div
                 key={i}
-                className="stagger-item relative bg-white rounded-3xl border border-gray-100 shadow-sm hover:shadow-lg hover:shadow-rose-100/30 transition-all duration-300 overflow-hidden"
+                className="relative bg-white rounded-3xl border border-gray-100 shadow-sm hover:shadow-lg hover:shadow-rose-100/30 transition-all duration-300 overflow-hidden"
+                initial={{ opacity: 0, x: -16 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: i * 0.08, duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
               >
                 {/* Left accent bar */}
                 <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-rose-400 to-pink-400 rounded-l-3xl" />
@@ -412,7 +446,7 @@ export default function ProfilePage() {
                     <TrashIcon className="w-4 h-4" />
                   </button>
                 </div>
-              </div>
+              </motion.div>
             ))}
 
             {showAddForm ? (
@@ -473,12 +507,18 @@ export default function ProfilePage() {
                 Add New Address
               </button>
             )}
-          </div>
+          </motion.div>
         )}
 
         {/* ── FAVOURITES TAB ──────────────────────────────────────── */}
         {activeTab === 'favourites' && (
-          <div className="animate-fade-in-up">
+          <motion.div
+            key="favourites"
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+          >
             {wishlistItems.length === 0 ? (
               <div className="bg-white rounded-3xl border border-gray-100 shadow-sm py-20 text-center">
                 {/* Heart illustration */}
@@ -525,15 +565,22 @@ export default function ProfilePage() {
                 </div>
 
                 {/* Grid */}
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
+                <motion.div
+                  className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4"
+                  initial="hidden"
+                  animate="show"
+                  variants={{ hidden: {}, show: { transition: { staggerChildren: 0.07, delayChildren: 0.05 } } }}
+                >
                   {wishlistItems.map((item, idx) => {
                     const discountPct = item.discountPrice
                       ? Math.round((1 - item.discountPrice / item.price) * 100)
                       : 0;
                     return (
-                      <div
+                      <motion.div
                         key={item.productId}
-                        className="stagger-item duration-400 group bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden hover:shadow-2xl hover:shadow-rose-100/40 hover:-translate-y-1.5 transition-all"
+                        className="group bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden hover:shadow-2xl hover:shadow-rose-100/40 hover:-translate-y-1.5 transition-all duration-300"
+                        variants={{ hidden: { opacity: 0, y: 20, scale: 0.95 }, show: { opacity: 1, y: 0, scale: 1 } }}
+                        transition={{ duration: 0.42, ease: [0.22, 1, 0.36, 1] }}
                       >
                         {/* Image area */}
                         <div className="relative aspect-[3/4] bg-gray-50 overflow-hidden">
@@ -591,14 +638,15 @@ export default function ProfilePage() {
                             )}
                           </div>
                         </div>
-                      </div>
+                      </motion.div>
                     );
                   })}
-                </div>
+                </motion.div>
               </>
             )}
-          </div>
+          </motion.div>
         )}
+        </AnimatePresence>
       </div>
     </div>
   );

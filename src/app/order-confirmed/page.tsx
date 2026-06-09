@@ -4,6 +4,7 @@ import { useSearchParams } from 'next/navigation';
 import axios from 'axios';
 import Link from 'next/link';
 import { CheckCircleIcon } from '@heroicons/react/24/solid';
+import { motion } from 'framer-motion';
 
 function OrderConfirmedContent() {
   const searchParams = useSearchParams();
@@ -20,15 +21,37 @@ function OrderConfirmedContent() {
 
   return (
     <div className="min-h-[80vh] flex items-center justify-center px-4">
-      <div className="max-w-md w-full text-center">
-        <div className="mb-6">
+      <motion.div
+        className="max-w-md w-full text-center"
+        initial={{ opacity: 0, y: 24 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+      >
+        <motion.div
+          className="mb-6"
+          initial={{ scale: 0.3, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ duration: 0.6, delay: 0.1, ease: [0.34, 1.56, 0.64, 1] }}
+        >
           <CheckCircleIcon className="w-20 h-20 text-emerald-400 mx-auto" />
-        </div>
-        <h1 className="text-3xl font-bold text-gray-900 font-serif mb-2">Order Confirmed!</h1>
-        <p className="text-gray-500 mb-6">Thank you for shopping with Ziya. We&apos;ll send you a confirmation email shortly.</p>
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.45, delay: 0.3 }}
+        >
+          <h1 className="text-3xl font-bold text-gray-900 font-serif mb-2">Order Confirmed!</h1>
+          <p className="text-gray-500 mb-6">Thank you for shopping with Ziya. We&apos;ll send you a confirmation email shortly.</p>
+        </motion.div>
 
         {order && (
-          <div className="bg-rose-50 rounded-2xl p-5 mb-6 text-left">
+          <motion.div
+            className="bg-rose-50 rounded-2xl p-5 mb-6 text-left"
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.45, delay: 0.45, ease: [0.22, 1, 0.36, 1] }}
+          >
             <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Order Details</p>
             <div className="space-y-2 text-sm">
               <div className="flex justify-between">
@@ -48,10 +71,15 @@ function OrderConfirmedContent() {
                 <span className="font-medium text-gray-700 uppercase text-xs">{String(order.paymentMethod)}</span>
               </div>
             </div>
-          </div>
+          </motion.div>
         )}
 
-        <div className="space-y-4">
+        <motion.div
+          className="space-y-4"
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 0.55 }}
+        >
           <p className="text-sm text-gray-500">
             🚚 Your order will be delivered in <strong>3-5 business days</strong>
           </p>
@@ -69,8 +97,8 @@ function OrderConfirmedContent() {
               Continue Shopping
             </Link>
           </div>
-        </div>
-      </div>
+        </motion.div>
+      </motion.div>
     </div>
   );
 }

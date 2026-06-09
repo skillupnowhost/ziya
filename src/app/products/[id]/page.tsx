@@ -1,13 +1,14 @@
 'use client';
 import { useEffect, useState, useRef } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import axios from 'axios';
 import { useCart } from '@/context/CartContext';
 import { useAuth } from '@/context/AuthContext';
+import { useWishlist } from '@/context/WishlistContext';
 import { useRealtimeStock } from '@/hooks/useRealtimeStock';
 import toast from 'react-hot-toast';
-import { StarIcon, ShoppingBagIcon, HeartIcon, TruckIcon, ShieldCheckIcon, ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
-import { StarIcon as StarSolid } from '@heroicons/react/24/solid';
+import { StarIcon, ShoppingBagIcon, HeartIcon, TruckIcon, ShieldCheckIcon, ChevronLeftIcon, ChevronRightIcon, BoltIcon, CheckIcon } from '@heroicons/react/24/outline';
+import { StarIcon as StarSolid, HeartIcon as HeartSolid } from '@heroicons/react/24/solid';
 import ProductCard from '@/components/ProductCard';
 
 interface Product {
@@ -56,8 +57,10 @@ export default function ProductDetailPage() {
   const [submittingReview, setSubmittingReview] = useState(false);
   const [tab, setTab] = useState<'description' | 'reviews'>('description');
 
-  const { addItem } = useCart();
+  const { addItem, items: cartItems } = useCart();
   const { user } = useAuth();
+  const { isWishlisted, toggle: toggleWishlist } = useWishlist();
+  const router = useRouter();
 
   // Real-time stock from SSE — falls back to product.stock until product loads
   const { stock: liveStock, connected: stockLive } = useRealtimeStock(
@@ -95,6 +98,9 @@ export default function ProductDetailPage() {
     return () => { if (imgTimerRef.current) clearInterval(imgTimerRef.current); };
   }, [product, imgHovered]);
 
+  const inCart = product ? cartItems.some((i) => i.productId === product._id) : false;
+  const wishlisted = product ? isWishlisted(product._id) : false;
+
   const handleAddToCart = () => {
     if (!product) return;
     if (product.sizes?.length && !selectedSize) { toast.error('Please select a size'); return; }
@@ -109,6 +115,35 @@ export default function ProductDetailPage() {
       stock: liveStock,
     });
     toast.success('Added to cart! 🛍️');
+  };
+
+  const handleBuyNow = () => {
+    if (!product) return;
+    if (product.sizes?.length && !selectedSize) { toast.error('Please select a size'); return; }
+    addItem({
+      productId: product._id,
+      name: product.name,
+      price: product.discountPrice || product.price,
+      image: product.images[0],
+      quantity,
+      size: selectedSize,
+      color: selectedColor,
+      stock: liveStock,
+    });
+    router.push('/checkout');
+  };
+
+  const handleToggleWishlist = () => {
+    if (!product) return;
+    toggleWishlist({
+      productId: product._id,
+      name: product.name,
+      price: product.price,
+      discountPrice: product.discountPrice,
+      image: product.images[0],
+      category: product.category,
+    });
+    toast.success(wishlisted ? 'Removed from favourites' : 'Saved to favourites ♥');
   };
 
   const handleSubmitReview = async (e: React.FormEvent) => {
@@ -365,18 +400,51 @@ export default function ProductDetailPage() {
           </div>
 
           {/* CTAs */}
-          <div className="flex gap-3 mb-8">
+          <div className="flex flex-col gap-3 mb-8">
+            {/* Buy Now */}
             <button
-              onClick={handleAddToCart}
+              onClick={handleBuyNow}
               disabled={liveStock === 0}
-              className="flex-1 flex items-center justify-center gap-2 py-3.5 bg-rose-400 text-white font-semibold rounded-full hover:bg-rose-500 transition-all hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed shadow-md shadow-rose-200"
+              className="w-full flex items-center justify-center gap-2 py-3.5 bg-gray-900 text-white font-semibold rounded-full hover:bg-gray-800 transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed shadow-md"
             >
-              <ShoppingBagIcon className="w-5 h-5" />
-              Add to Cart
+              <BoltIcon className="w-5 h-5" />
+              Buy Now
             </button>
-            <button className="p-3.5 border-2 border-gray-200 rounded-full hover:border-rose-300 hover:bg-rose-50 transition-colors">
-              <HeartIcon className="w-5 h-5 text-gray-500" />
-            </button>
+
+            {/* Add to Cart + Wishlist */}
+            <div className="flex gap-3">
+              <button
+                onClick={handleAddToCart}
+                disabled={liveStock === 0}
+                className={`flex-1 flex items-center justify-center gap-2 py-3.5 font-semibold rounded-full transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed shadow-md ${
+                  inCart
+                    ? 'bg-emerald-500 hover:bg-emerald-600 text-white shadow-emerald-200'
+                    : 'bg-rose-400 hover:bg-rose-500 text-white shadow-rose-200'
+                }`}
+              >
+                {inCart ? (
+                  <><CheckIcon className="w-5 h-5" />Added to Cart</>
+                ) : (
+                  <><ShoppingBagIcon className="w-5 h-5" />Add to Cart</>
+                )}
+              </button>
+
+              <button
+                type="button"
+                onClick={handleToggleWishlist}
+                className={`p-3.5 rounded-full border-2 transition-all hover:scale-110 active:scale-95 ${
+                  wishlisted
+                    ? 'border-rose-400 bg-rose-50 text-rose-400'
+                    : 'border-gray-200 hover:border-rose-300 hover:bg-rose-50 text-gray-400 hover:text-rose-400'
+                }`}
+                title={wishlisted ? 'Remove from favourites' : 'Save to favourites'}
+              >
+                {wishlisted
+                  ? <HeartSolid className="w-5 h-5" />
+                  : <HeartIcon className="w-5 h-5" />
+                }
+              </button>
+            </div>
           </div>
 
           {/* USPs */}

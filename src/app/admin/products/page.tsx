@@ -3,6 +3,8 @@ import { useEffect, useRef, useState } from 'react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import { PlusIcon, PencilIcon, TrashIcon, PhotoIcon, XMarkIcon, ChevronDownIcon } from '@heroicons/react/24/outline';
+import { ExclamationTriangleIcon } from '@heroicons/react/24/solid';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface Product {
   _id: string;
@@ -46,6 +48,61 @@ const EMPTY_FORM = {
   isFeatured: false, isNew: true, isTrending: false, isActive: true,
 };
 
+// ── Delete confirm modal ───────────────────────────────────────────────────
+function DeleteModal({ product, onConfirm, onClose }: { product: Product; onConfirm: () => void; onClose: () => void }) {
+  const [busy, setBusy] = useState(false);
+
+  const handle = async () => {
+    setBusy(true);
+    await onConfirm();
+    setBusy(false);
+  };
+
+  return (
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+      <motion.div
+        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        onClick={onClose}
+      />
+      <motion.div
+        className="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 text-center"
+        initial={{ scale: 0.88, opacity: 0, y: 16 }}
+        animate={{ scale: 1, opacity: 1, y: 0 }}
+        exit={{ scale: 0.88, opacity: 0, y: 16 }}
+        transition={{ type: 'spring', stiffness: 420, damping: 28 }}
+      >
+        <div className="w-14 h-14 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-4">
+          <ExclamationTriangleIcon className="w-7 h-7 text-red-500" />
+        </div>
+        <h2 className="text-lg font-bold text-gray-900 mb-1">Delete Product?</h2>
+        <p className="text-sm font-medium text-gray-700 mb-1 line-clamp-1 px-2">{product.name}</p>
+        <p className="text-sm text-gray-400 mb-6">This will permanently remove the product from the database and all customer-facing pages. This action cannot be undone.</p>
+        <div className="flex gap-3">
+          <button onClick={onClose} className="flex-1 py-2.5 rounded-xl border border-gray-200 text-sm font-semibold text-gray-600 hover:bg-gray-50 transition-colors">
+            Cancel
+          </button>
+          <motion.button
+            onClick={handle}
+            disabled={busy}
+            className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-red-500 to-rose-500 text-white text-sm font-bold shadow-sm shadow-red-200 disabled:opacity-60 flex items-center justify-center gap-2"
+            whileHover={{ scale: 1.02, boxShadow: '0 6px 20px rgba(239,68,68,0.35)' }}
+            whileTap={{ scale: 0.97 }}
+          >
+            {busy ? (
+              <motion.span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full" animate={{ rotate: 360 }} transition={{ duration: 0.7, repeat: Infinity, ease: 'linear' }} />
+            ) : (
+              <><TrashIcon className="w-4 h-4" />Delete</>
+            )}
+          </motion.button>
+        </div>
+      </motion.div>
+    </div>
+  );
+}
+
 export default function AdminProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
@@ -58,6 +115,7 @@ export default function AdminProductsPage() {
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [deleteModal, setDeleteModal] = useState<Product | null>(null);
 
   // Sizes multi-select
   const [selectedSizes, setSelectedSizes] = useState<string[]>([]);
@@ -202,16 +260,18 @@ export default function AdminProductsPage() {
     setShowForm(true);
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Delete this product?')) return;
+  const confirmDelete = async () => {
+    if (!deleteModal) return;
     try {
-      await axios.delete(`/api/products/${id}`);
+      await axios.delete(`/api/products/${deleteModal._id}`);
       toast.success('Product deleted');
+      setDeleteModal(null);
       fetchProducts(page);
     } catch { toast.error('Failed to delete'); }
   };
 
   return (
+    <>
     <div>
       <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
         <h1 className="text-2xl font-bold text-gray-900 font-serif">Products</h1>
@@ -604,13 +664,15 @@ export default function AdminProductsPage() {
                       >
                         <PencilIcon className="w-4 h-4" />
                       </button>
-                      <button
+                      <motion.button
                         type="button"
-                        onClick={() => handleDelete(p._id)}
+                        onClick={() => setDeleteModal(p)}
                         className="p-1.5 text-gray-500 hover:text-red-400 hover:bg-red-50 rounded-lg transition-colors"
+                        whileHover={{ scale: 1.15 }}
+                        whileTap={{ scale: 0.88 }}
                       >
                         <TrashIcon className="w-4 h-4" />
-                      </button>
+                      </motion.button>
                     </div>
                   </td>
                 </tr>
@@ -630,5 +692,18 @@ export default function AdminProductsPage() {
         )}
       </div>
     </div>
+
+    {/* Delete confirm modal */}
+    <AnimatePresence>
+      {deleteModal && (
+        <DeleteModal
+          key="delete-modal"
+          product={deleteModal}
+          onConfirm={confirmDelete}
+          onClose={() => setDeleteModal(null)}
+        />
+      )}
+    </AnimatePresence>
+    </>
   );
 }

@@ -4,6 +4,7 @@ import axios from 'axios';
 import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
+import { motion } from 'framer-motion';
 
 interface Order {
   _id: string;
@@ -45,23 +46,42 @@ export default function OrdersPage() {
   );
 
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <motion.div
+      className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8"
+      initial={{ opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+    >
       <h1 className="text-3xl font-bold text-gray-900 font-serif mb-8">My Orders</h1>
 
       {orders.length === 0 ? (
-        <div className="text-center py-20">
+        <motion.div
+          className="text-center py-20"
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.4, delay: 0.1 }}
+        >
           <div className="text-6xl mb-4">📦</div>
           <h2 className="text-xl font-semibold text-gray-700 mb-2">No orders yet</h2>
           <p className="text-gray-500 mb-6">Start shopping to see your orders here</p>
           <Link href="/products" className="px-6 py-3 bg-rose-400 text-white font-semibold rounded-full hover:bg-rose-500 transition-colors text-sm">
             Shop Now
           </Link>
-        </div>
+        </motion.div>
       ) : (
-        <div className="space-y-4">
+        <motion.div
+          className="space-y-4"
+          initial="hidden"
+          animate="show"
+          variants={{ hidden: {}, show: { transition: { staggerChildren: 0.08, delayChildren: 0.05 } } }}
+        >
           {orders.map((order) => (
-            <Link key={order._id} href={`/orders/${order._id}`}>
-              <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 hover:shadow-md transition-shadow">
+            <motion.div
+              key={order._id}
+              variants={{ hidden: { opacity: 0, y: 16 }, show: { opacity: 1, y: 0, transition: { duration: 0.4, ease: [0.22, 1, 0.36, 1] } } }}
+            >
+            <Link href={`/orders/${order._id}`}>
+              <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 hover:shadow-md transition-all hover:-translate-y-0.5 duration-200">
                 <div className="flex items-start justify-between mb-4 gap-4">
                   <div>
                     <p className="text-xs text-gray-400 mb-0.5">Order #{order._id.slice(-8).toUpperCase()}</p>
@@ -96,9 +116,10 @@ export default function OrdersPage() {
                 </p>
               </div>
             </Link>
+            </motion.div>
           ))}
-        </div>
+        </motion.div>
       )}
-    </div>
+    </motion.div>
   );
 }

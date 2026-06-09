@@ -7,10 +7,14 @@
 
 * {
   box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
 }
 
 html {
   scroll-behavior: smooth;
+  height: 100%;
+  width: 100%;
+  overflow-x: hidden;
 }
 
 body {
@@ -18,7 +22,15 @@ body {
   background: var(--background);
   font-family: system-ui, -apple-system, sans-serif;
   -webkit-font-smoothing: antialiased;
+  width: 100%;
+  min-height: 100%;
+  overflow-x: hidden;
 }
+
+/* iOS safe-area inset support */
+.safe-bottom { padding-bottom: env(safe-area-inset-bottom, 0px); }
+.h-safe-bottom { height: env(safe-area-inset-bottom, 0px); }
+.pb-safe { padding-bottom: max(env(safe-area-inset-bottom, 0px), 0.5rem); }
 
 ::-webkit-scrollbar { width: 6px; }
 ::-webkit-scrollbar-track { background: #f9fafb; }
@@ -95,7 +107,7 @@ body {
   100% { background-position: 200% center; }
 }
 .trending-shimmer {
-  background: linear-gradient(90deg, #f43f5e 25%, #fb7185 50%, #f43f5e 75%);
+  background: linear-gradient(90deg, #f9a8d4 25%, #fda4af 50%, #f9a8d4 75%);
   background-size: 200% auto;
   animation: shimmer 2.5s linear infinite;
   -webkit-background-clip: text;
@@ -118,6 +130,78 @@ body {
     rgba(255, 241, 242, 0.70) 82%,
     rgba(255, 241, 242, 0.92) 100%
   );
+  animation: cloudPulse 6s ease-in-out infinite;
+}
+
+@keyframes cloudPulse {
+  0%, 100% {
+    background: radial-gradient(
+      ellipse at center,
+      transparent 48%,
+      rgba(255, 241, 242, 0.35) 65%,
+      rgba(255, 241, 242, 0.70) 82%,
+      rgba(255, 241, 242, 0.92) 100%
+    );
+  }
+  50% {
+    background: radial-gradient(
+      ellipse at center,
+      transparent 44%,
+      rgba(255, 241, 242, 0.40) 62%,
+      rgba(255, 241, 242, 0.80) 80%,
+      rgba(255, 241, 242, 0.96) 100%
+    );
+  }
+}
+
+/* Animated blob morph on hero image wrapper */
+@keyframes heroBlob {
+  0%,100% { border-radius: 24px; }
+  20%      { border-radius: 42% 58% 55% 45% / 48% 42% 58% 52%; }
+  40%      { border-radius: 58% 42% 40% 60% / 55% 58% 42% 45%; }
+  60%      { border-radius: 38% 62% 58% 42% / 45% 52% 48% 55%; }
+  80%      { border-radius: 55% 45% 42% 58% / 58% 38% 62% 42%; }
+}
+
+.hero-image-wrapper {
+  animation: heroBlob 10s ease-in-out infinite;
+  overflow: hidden;
+}
+
+/* Corner shimmer fades */
+.hero-image-wrapper::before,
+.hero-image-wrapper::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border-radius: inherit;
+}
+
+.hero-image-wrapper::before {
+  background:
+    radial-gradient(ellipse at top left,    rgba(255,228,230,0.75) 0%, transparent 38%),
+    radial-gradient(ellipse at bottom right, rgba(255,228,230,0.65) 0%, transparent 38%);
+  animation: cornerFadeA 8s ease-in-out infinite;
+  z-index: 1;
+}
+
+.hero-image-wrapper::after {
+  background:
+    radial-gradient(ellipse at top right,   rgba(255,241,242,0.70) 0%, transparent 36%),
+    radial-gradient(ellipse at bottom left,  rgba(255,241,242,0.60) 0%, transparent 36%);
+  animation: cornerFadeB 8s ease-in-out infinite;
+  z-index: 1;
+}
+
+@keyframes cornerFadeA {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.5; }
+}
+
+@keyframes cornerFadeB {
+  0%, 100% { opacity: 0.5; }
+  50%       { opacity: 1; }
 }
 
 /* Truck drive — nudges right then snaps back, suggesting motion */
@@ -139,10 +223,10 @@ body {
   color: transparent;
 }
 .newsletter-card-border {
-  background: linear-gradient(135deg, rgba(244,63,94,0.5) 0%, rgba(244,63,94,0.05) 50%, rgba(244,63,94,0.3) 100%);
+  background: linear-gradient(135deg, rgba(249,168,212,0.5) 0%, rgba(249,168,212,0.05) 50%, rgba(249,168,212,0.3) 100%);
 }
 .newsletter-submit-btn {
-  background: linear-gradient(135deg, #f43f5e 0%, #e11d48 50%, #f43f5e 100%);
+  background: linear-gradient(135deg, #f9a8d4 0%, #fda4af 50%, #f9a8d4 100%);
   background-size: 200% auto;
   animation: shimmer 3s linear infinite;
 }
@@ -194,7 +278,7 @@ body {
 .fl-wrap input:focus ~ label,
 .fl-wrap input:not(:placeholder-shown) ~ label {
   top: 0.55rem; transform: translateY(0); font-size: 0.625rem;
-  font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: #f43f5e;
+  font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: #f472b6;
 }
 
 /* Wishlist card hover slide-up */
@@ -214,7 +298,7 @@ body {
   content: '';
   position: absolute; inset: 0; left: -3px;
   border-radius: inherit;
-  background: linear-gradient(160deg, #f43f5e, #ec4899);
+  background: linear-gradient(160deg, #fda4af, #f9a8d4);
   z-index: -1;
   border-radius: 24px;
 }
@@ -246,5 +330,95 @@ body {
   background-size: 28px 28px;
 }
 
+/* Category hero banner dot pattern */
+.category-hero-dots {
+  background-image:
+    radial-gradient(circle at 20% 50%, white 1px, transparent 1px),
+    radial-gradient(circle at 80% 50%, white 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
 /* Wishlist card / overlay transition duration */
 .duration-400 { transition-duration: 400ms; }
+
+/* ── Extra animation utilities ─────────────────────────────────── */
+@keyframes slideInUp {
+  from { opacity: 0; transform: translateY(32px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.animate-slide-in-up { animation: slideInUp 0.55s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+
+@keyframes scaleInBounce {
+  from { opacity: 0; transform: scale(0.82); }
+  to   { opacity: 1; transform: scale(1); }
+}
+.animate-scale-in { animation: scaleInBounce 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
+
+/* Pop in — success icons, confirmations */
+@keyframes popIn {
+  0%   { opacity: 0; transform: scale(0.3) rotate(-12deg); }
+  60%  { opacity: 1; transform: scale(1.15) rotate(3deg); }
+  100% { opacity: 1; transform: scale(1) rotate(0deg); }
+}
+.animate-pop-in { animation: popIn 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
+
+/* Skeleton shimmer */
+@keyframes skeletonShimmer {
+  0%   { background-position: -400px 0; }
+  100% { background-position: 400px 0; }
+}
+.skeleton {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e8e8e8 37%, #f0f0f0 63%);
+  background-size: 800px 100%;
+  animation: skeletonShimmer 1.4s ease infinite;
+}
+
+/* Hover lift — universal card polish */
+.hover-lift {
+  transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.25s ease;
+}
+.hover-lift:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.08), 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+/* Ripple press feedback */
+@keyframes ripple {
+  0%   { transform: scale(0); opacity: 0.4; }
+  100% { transform: scale(4); opacity: 0; }
+}
+.ripple-effect { position: relative; overflow: hidden; }
+.ripple-effect::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(255, 255, 255, 0.35);
+  border-radius: inherit;
+  transform: scale(0);
+  pointer-events: none;
+}
+.ripple-effect:active::after { animation: ripple 0.5s ease-out; }
+
+/* Auth page — brand panel gradient */
+.auth-brand-panel {
+  background: linear-gradient(145deg, #1c0a14 0%, #3b0d2a 45%, #1a0d1d 100%);
+}
+
+/* Auth page — shimmer gradient for branded text & submit button */
+.auth-shimmer-text {
+  background: linear-gradient(90deg, #fda4af, #f9a8d4, #fda4af);
+  background-size: 200% auto;
+  animation: shimmer 3s linear infinite;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.auth-submit-btn {
+  background: linear-gradient(135deg, #fda4af, #f9a8d4, #fda4af);
+  background-size: 200% auto;
+  animation: shimmer 3s linear infinite;
+}
+.auth-dot-grid {
+  background-image: radial-gradient(circle, rgba(255,255,255,0.7) 1px, transparent 1px);
+  background-size: 28px 28px;
+}

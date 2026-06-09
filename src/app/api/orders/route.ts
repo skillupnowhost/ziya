@@ -4,6 +4,7 @@ import Order from '@/models/Order';
 import Product from '@/models/Product';
 import NewsletterCoupon from '@/models/NewsletterCoupon';
 import CouponLog from '@/models/CouponLog';
+import PromoCode from '@/models/PromoCode';
 import { getUserFromRequest } from '@/lib/auth';
 
 export async function GET(req: NextRequest) {
@@ -73,20 +74,40 @@ export async function POST(req: NextRequest) {
     const shippingCost = subtotal >= 999 ? 0 : 99;
     let discount = 0;
 
-    // Validate newsletter coupons server-side (cannot be bypassed from client)
     let newsletterCoupon = null;
+    let appliedPromoCode = null;
+
     if (promoCode) {
       const code = promoCode.trim().toUpperCase();
-      if (code === 'ZIYA20') {
-        discount = Math.round(subtotal * 0.2);
-      } else if (code === 'FREESHIP') {
-        discount = shippingCost;
+
+      // Admin-created promo codes
+      const promo = await PromoCode.findOne({ code });
+      if (promo) {
+        if (!promo.isActive) {
+          return NextResponse.json({ error: 'This promo code is no longer active' }, { status: 400 });
+        }
+        if (promo.expiresAt && new Date() > promo.expiresAt) {
+          return NextResponse.json({ error: 'This promo code has expired' }, { status: 400 });
+        }
+        if (promo.maxUses != null && promo.usedCount >= promo.maxUses) {
+          return NextResponse.json({ error: 'This promo code has reached its usage limit' }, { status: 400 });
+        }
+        if (promo.minOrderValue != null && subtotal < promo.minOrderValue) {
+          return NextResponse.json({ error: `Minimum order value of ₹${promo.minOrderValue} required` }, { status: 400 });
+        }
+        if (promo.discountType === 'percent') {
+          discount = Math.round(subtotal * promo.discountValue / 100);
+        } else if (promo.discountType === 'flat') {
+          discount = Math.min(promo.discountValue, subtotal);
+        } else if (promo.discountType === 'shipping') {
+          discount = shippingCost;
+        }
+        appliedPromoCode = promo;
       } else if (code.startsWith('ZIYA10-')) {
         newsletterCoupon = await NewsletterCoupon.findOne({ couponCode: code });
         if (!newsletterCoupon || newsletterCoupon.isUsed) {
           return NextResponse.json({ error: 'This coupon is invalid or has already been used' }, { status: 400 });
         }
-        // Enforce first-order rule
         const priorOrders = await Order.countDocuments({
           userId: payload.id,
           status: { $in: ['confirmed', 'processing', 'shipped', 'delivered'] },
@@ -95,6 +116,8 @@ export async function POST(req: NextRequest) {
           return NextResponse.json({ error: 'This coupon is valid on your first order only' }, { status: 400 });
         }
         discount = Math.round(subtotal * 0.1);
+      } else {
+        return NextResponse.json({ error: 'Invalid coupon code' }, { status: 400 });
       }
     }
 
@@ -119,6 +142,11 @@ export async function POST(req: NextRequest) {
       for (const item of items) {
         await Product.findByIdAndUpdate(item.productId, { $inc: { stock: -item.quantity } });
       }
+    }
+
+    // Increment promo code usage counter
+    if (appliedPromoCode) {
+      await PromoCode.findByIdAndUpdate(appliedPromoCode._id, { $inc: { usedCount: 1 } });
     }
 
     // Mark newsletter coupon as used

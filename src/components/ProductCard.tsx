@@ -93,7 +93,7 @@ export default function ProductCard({ product }: { product: Product }) {
 
   return (
     <Link href={`/products/${product._id}`} className="block group">
-      <div className="relative bg-white rounded-3xl border border-gray-100 shadow-[0_2px_12px_rgba(0,0,0,0.06)] hover:shadow-[0_12px_40px_rgba(251,113,133,0.18),0_4px_16px_rgba(0,0,0,0.08)] hover:-translate-y-1.5 transition-all duration-300 ease-out">
+      <div className="relative bg-white rounded-3xl border border-pink-100 shadow-[0_2px_12px_rgba(249,168,212,0.12)] hover:shadow-[0_12px_40px_rgba(249,168,212,0.35),0_4px_16px_rgba(249,168,212,0.15)] hover:-translate-y-1.5 transition-all duration-300 ease-out">
 
         {/* Badges */}
         <div className="absolute top-3 left-3 z-10 flex flex-col gap-1.5 pointer-events-none">
@@ -101,10 +101,10 @@ export default function ProductCard({ product }: { product: Product }) {
             <span className="bg-emerald-400 text-white text-[10px] font-bold px-2.5 py-1 rounded-full tracking-wide uppercase shadow-sm">New</span>
           )}
           {product.isTrending && (
-            <span className="bg-gradient-to-r from-rose-400 to-pink-500 text-white text-[10px] font-bold px-2.5 py-1 rounded-full tracking-wide uppercase shadow-sm">Trending</span>
+            <span className="bg-gradient-to-r from-pink-300 to-rose-300 text-white text-[10px] font-bold px-2.5 py-1 rounded-full tracking-wide uppercase shadow-sm">Trending</span>
           )}
           {discount > 0 && (
-            <span className="bg-amber-400 text-white text-[10px] font-bold px-2.5 py-1 rounded-full tracking-wide uppercase shadow-sm">-{discount}%</span>
+            <span className="bg-rose-300 text-white text-[10px] font-bold px-2.5 py-1 rounded-full tracking-wide uppercase shadow-sm">-{discount}%</span>
           )}
         </div>
 
@@ -112,7 +112,7 @@ export default function ProductCard({ product }: { product: Product }) {
         <button
           onClick={handleWishlist}
           type="button"
-          className={`absolute top-3 right-3 z-10 w-8 h-8 flex items-center justify-center rounded-full shadow-md transition-all duration-200 ${liked ? 'bg-rose-400 scale-110' : 'bg-white/90 hover:bg-rose-50 hover:scale-110'}`}
+          className={`absolute top-3 right-3 z-10 w-8 h-8 flex items-center justify-center rounded-full shadow-md transition-all duration-200 ${liked ? 'bg-pink-300 scale-110' : 'bg-white/90 hover:bg-pink-50 hover:scale-110'}`}
         >
           {liked
             ? <HeartSolid className="w-4 h-4 text-white" />
@@ -203,7 +203,7 @@ export default function ProductCard({ product }: { product: Product }) {
                   className={`flex items-center justify-center gap-2 w-full py-2.5 rounded-2xl text-sm font-semibold shadow-lg transition-all duration-200 ${
                     cartPopping
                       ? 'bg-emerald-400 text-white scale-95'
-                      : 'bg-gray-900 hover:bg-rose-500 text-white'
+                      : 'bg-pink-300 hover:bg-pink-400 text-white'
                   }`}
                 >
                   <ShoppingBagIcon className={`w-4 h-4 transition-transform duration-300 ${cartPopping ? 'scale-125' : ''}`} />
@@ -216,7 +216,7 @@ export default function ProductCard({ product }: { product: Product }) {
 
         {/* Info */}
         <div className="p-3.5 rounded-b-3xl">
-          <p className="text-[10px] font-semibold text-rose-400 uppercase tracking-widest mb-1">{product.category}</p>
+          <p className="text-[10px] font-semibold text-pink-400 uppercase tracking-widest mb-1">{product.category}</p>
           <h3 className="text-sm font-semibold text-gray-800 line-clamp-2 leading-snug">{product.name}</h3>
 
           <div className="flex items-center gap-1 mt-1.5">
@@ -239,7 +239,7 @@ export default function ProductCard({ product }: { product: Product }) {
               )}
             </div>
             {discount > 0 && (
-              <span className="text-[10px] font-bold text-emerald-500 bg-emerald-50 px-2 py-0.5 rounded-full">{discount}% off</span>
+              <span className="text-[10px] font-bold text-pink-500 bg-pink-50 px-2 py-0.5 rounded-full">{discount}% off</span>
             )}
           </div>
         </div>

@@ -3,6 +3,7 @@ import { useEffect, useState, useCallback } from 'react';
 import axios from 'axios';
 import ProductCard from '@/components/ProductCard';
 import Link from 'next/link';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface Product {
   _id: string;
@@ -19,6 +20,16 @@ interface Product {
 }
 
 const TABS = ['All', 'Dresses', 'Accessories', 'Stationery'];
+
+const gridVariants = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.07 } },
+};
+
+const cardVariant = {
+  hidden: { opacity: 0, y: 24, scale: 0.96 },
+  show: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.45, ease: [0.22, 1, 0.36, 1] } },
+};
 
 export default function NewArrivalsSection() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -65,7 +76,13 @@ export default function NewArrivalsSection() {
   return (
     <section className="py-10 bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex flex-col sm:flex-row items-start sm:items-end justify-between mb-8 gap-4">
+        <motion.div
+          className="flex flex-col sm:flex-row items-start sm:items-end justify-between mb-8 gap-4"
+          initial={{ opacity: 0, y: 24 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: '-60px' }}
+          transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
+        >
           <div>
             <p className="text-rose-400 text-sm tracking-[0.3em] uppercase font-medium mb-1">Just In</p>
             <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 font-serif">New Arrivals</h2>
@@ -73,10 +90,16 @@ export default function NewArrivalsSection() {
           <Link href="/products?new=true" className="text-sm font-medium text-rose-400 hover:text-rose-500">
             View all →
           </Link>
-        </div>
+        </motion.div>
 
         {/* Tabs */}
-        <div className="flex flex-wrap gap-2 mb-8">
+        <motion.div
+          className="flex flex-wrap gap-2 mb-8"
+          initial={{ opacity: 0, y: 12 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: '-40px' }}
+          transition={{ duration: 0.45, delay: 0.1 }}
+        >
           {TABS.map((tab) => (
             <button
               key={tab}
@@ -90,7 +113,7 @@ export default function NewArrivalsSection() {
               {tab}
             </button>
           ))}
-        </div>
+        </motion.div>
 
         {/* Grid */}
         {loading && products.length === 0 ? (
@@ -102,23 +125,38 @@ export default function NewArrivalsSection() {
         ) : products.length === 0 ? (
           <div className="text-center py-20 text-gray-500">No new arrivals found in this category.</div>
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-5">
-            {products.map((product) => (
-              <ProductCard key={product._id} product={product} />
-            ))}
-          </div>
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={activeTab}
+              className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-5"
+              variants={gridVariants}
+              initial="hidden"
+              animate="show"
+            >
+              {products.map((product) => (
+                <motion.div key={product._id} variants={cardVariant}>
+                  <ProductCard product={product} />
+                </motion.div>
+              ))}
+            </motion.div>
+          </AnimatePresence>
         )}
 
         {hasMore && (
-          <div className="flex justify-center mt-10">
+          <motion.div
+            className="flex justify-center mt-10"
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            viewport={{ once: true }}
+          >
             <button
               onClick={loadMore}
               disabled={loading}
-              className="px-10 py-3 border-2 border-rose-400 text-rose-400 font-semibold rounded-full hover:bg-rose-400 hover:text-white transition-all disabled:opacity-50"
+              className="px-10 py-3 border-2 border-rose-400 text-rose-400 font-semibold rounded-full hover:bg-rose-400 hover:text-white transition-all active:scale-95 disabled:opacity-50"
             >
               {loading ? 'Loading...' : 'Load More'}
             </button>
-          </div>
+          </motion.div>
         )}
       </div>
     </section>

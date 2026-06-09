@@ -8,6 +8,7 @@ import { WishlistProvider } from "@/context/WishlistContext";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import MainWrapper from "@/components/MainWrapper";
+import MobileBottomNav from "@/components/MobileBottomNav";
 import { Toaster } from "react-hot-toast";
 
 export const metadata: Metadata = {
@@ -37,6 +38,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               </Suspense>
               <MainWrapper>{children}</MainWrapper>
               <Footer />
+              <MobileBottomNav />
               <Toaster
                 position="bottom-right"
                 toastOptions={{
