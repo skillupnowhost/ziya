@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useState, useCallback, Suspense, useRef } from 'react';
+import React, { useEffect, useState, useCallback, Suspense, useRef } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import axios from 'axios';
 import Link from 'next/link';
@@ -45,6 +45,7 @@ const CATEGORY_CONFIG: Record<string, { emoji: string; gradient: string; activeG
   Stationery:  { emoji: '📝', gradient: 'from-sky-50 to-indigo-50',   activeGradient: 'from-sky-400 to-indigo-500',  activeText: 'text-sky-700',   glowColor: 'shadow-sky-200'    },
   Dresses:     { emoji: '👗', gradient: 'from-pink-50 to-purple-50',  activeGradient: 'from-pink-400 to-purple-500', activeText: 'text-pink-700',  glowColor: 'shadow-pink-200'   },
 };
+
 const SORT_OPTIONS = [
   { label: 'Latest',            value: 'createdAt-desc' },
   { label: 'Price: Low to High', value: 'price-asc'     },
@@ -201,8 +202,8 @@ function CollapsibleSection({ title, children, defaultOpen = true }: { title:str
 }
 
 /* ─── SidebarFilters ─── */
-function SidebarFilters({ activeCategory, filters, setFilters, onClearAll, hideHeader = false }:{
-  activeCategory:string; filters:Filters; setFilters:(f:Filters)=>void; onClearAll:()=>void; hideHeader?:boolean;
+function SidebarFilters({ activeCategory, filters, setFilters, onClearAll, onCategoryChange, hideHeader = false }:{
+  activeCategory:string; filters:Filters; setFilters:React.Dispatch<React.SetStateAction<Filters>>; onClearAll:()=>void; onCategoryChange:(cat:string)=>void; hideHeader?:boolean;
 }) {
   const hasActiveFilters = filters.priceMin || filters.priceMax || filters.rating > 0 ||
     filters.trending || filters.isNew || filters.inStockOnly;
@@ -260,9 +261,10 @@ function SidebarFilters({ activeCategory, filters, setFilters, onClearAll, hideH
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: i * 0.06, duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
               >
-                <Link
-                  href={cat === 'All' ? '/products' : `/products?category=${cat.toLowerCase()}`}
-                  className="block"
+                <button
+                  type="button"
+                  className="block w-full text-left"
+                  onClick={() => onCategoryChange(cat)}
                 >
                   <motion.div
                     className={`relative flex items-center gap-3 px-3 py-2.5 rounded-xl overflow-hidden cursor-pointer transition-colors duration-200 ${
@@ -322,7 +324,7 @@ function SidebarFilters({ activeCategory, filters, setFilters, onClearAll, hideH
                       )}
                     </AnimatePresence>
                   </motion.div>
-                </Link>
+                </button>
               </motion.div>
             );
           })}
@@ -399,7 +401,7 @@ function SidebarFilters({ activeCategory, filters, setFilters, onClearAll, hideH
                   whileHover={{ scale: 1.04, y: -1 }}
                   whileTap={{ scale: 0.93 }}
                   animate={isSelected ? { scale: [1, 1.06, 1] } : { scale: 1 }}
-                  transition={{ type: 'spring', stiffness: 400, damping: 20 }}
+                  transition={isSelected ? { type: 'tween', duration: 0.3, ease: 'easeInOut' } : { type: 'spring', stiffness: 400, damping: 20 }}
                 >
                   {preset.label}
                 </motion.button>
@@ -558,6 +560,7 @@ function ProductsContent() {
   const [viewMode,   setViewMode  ] = useState<'grid'|'list'>('grid');
   const topRef = useRef<HTMLDivElement>(null);
 
+  const router   = useRouter();
   const category = searchParams.get('category') || 'all';
   const search   = searchParams.get('search')   || '';
 
@@ -577,8 +580,17 @@ function ProductsContent() {
       const data = res.data;
       let fetched: Product[] = data.products || [];
 
+      /* client-side guards (server handles most; these catch edge cases) */
       if (filters.rating > 0)  fetched = fetched.filter((p) => p.rating >= filters.rating);
       if (filters.inStockOnly) fetched = fetched.filter((p) => p.stock > 0);
+      if (filters.priceMin || filters.priceMax) {
+        const min = filters.priceMin ? parseFloat(filters.priceMin) : 0;
+        const max = filters.priceMax ? parseFloat(filters.priceMax) : Infinity;
+        fetched = fetched.filter((p) => {
+          const effective = (p.discountPrice && p.discountPrice > 0) ? p.discountPrice : p.price;
+          return effective >= min && effective <= max;
+        });
+      }
 
       setProducts(fetched);
       setTotal(data.pagination?.total || 0);
@@ -601,9 +613,15 @@ function ProductsContent() {
     topRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
-  const clearAllFilters = () => setFilters(DEFAULT_FILTERS);
   const activeCategory  = CATEGORIES.find((c) => c.toLowerCase() === category) || 'All';
   const meta            = CATEGORY_META[activeCategory] || CATEGORY_META['All'];
+
+  const handleCategoryChange = useCallback((cat: string) => {
+    router.push(cat === 'All' ? '/products' : `/products?category=${cat.toLowerCase()}`);
+  }, [router]);
+
+  const clearAllFilters = () => setFilters(DEFAULT_FILTERS);
+  const currentPageHref = category === 'all' ? '/products' : `/products?category=${category}`;
 
   const activeFilterCount = [
     filters.priceMin || filters.priceMax, filters.rating > 0,
@@ -613,11 +631,11 @@ function ProductsContent() {
   /* active-chip list for AnimatePresence */
   type Chip = { id: string; label: string; clear: () => void };
   const chips: Chip[] = [];
-  if (filters.priceMin || filters.priceMax) chips.push({ id:'price', label:`₹${filters.priceMin||'0'} – ₹${filters.priceMax||'∞'}`, clear:() => setFilters({...filters,priceMin:'',priceMax:''}) });
-  if (filters.rating > 0)  chips.push({ id:'rating',   label:`${filters.rating}+ Stars`, clear:() => setFilters({...filters,rating:0})         });
-  if (filters.trending)    chips.push({ id:'trending',  label:'🔥 Trending',             clear:() => setFilters({...filters,trending:false})    });
-  if (filters.isNew)       chips.push({ id:'new',       label:'✨ New Arrivals',          clear:() => setFilters({...filters,isNew:false})       });
-  if (filters.inStockOnly) chips.push({ id:'stock',     label:'✅ In Stock',             clear:() => setFilters({...filters,inStockOnly:false}) });
+  if (filters.priceMin || filters.priceMax) chips.push({ id:'price',    label:`₹${filters.priceMin||'0'} – ₹${filters.priceMax||'∞'}`, clear:() => setFilters(prev => ({...prev,priceMin:'',priceMax:''})) });
+  if (filters.rating > 0)  chips.push({ id:'rating',   label:`${filters.rating}+ Stars`, clear:() => setFilters(prev => ({...prev,rating:0}))         });
+  if (filters.trending)    chips.push({ id:'trending',  label:'🔥 Trending',             clear:() => setFilters(prev => ({...prev,trending:false}))    });
+  if (filters.isNew)       chips.push({ id:'new',       label:'✨ New Arrivals',          clear:() => setFilters(prev => ({...prev,isNew:false}))       });
+  if (filters.inStockOnly) chips.push({ id:'stock',     label:'✅ In Stock',             clear:() => setFilters(prev => ({...prev,inStockOnly:false})) });
 
   const gridKey = `${page}-${sort}-${category}-${search}-${JSON.stringify(filters)}`;
 
@@ -692,7 +710,7 @@ function ProductsContent() {
             transition={{ duration:0.5, delay:0.18, ease:[0.22,1,0.36,1] }}
           >
             <div className="bg-white rounded-2xl border border-pink-100 shadow-sm p-5 sticky top-20">
-              <SidebarFilters activeCategory={activeCategory} filters={filters} setFilters={setFilters} onClearAll={clearAllFilters} />
+              <SidebarFilters activeCategory={activeCategory} filters={filters} setFilters={setFilters} onClearAll={clearAllFilters} onCategoryChange={handleCategoryChange} />
             </div>
           </motion.div>
 
@@ -775,52 +793,39 @@ function ProductsContent() {
             </div>
 
             {/* ── Active filter chips ── */}
-            <AnimatePresence>
-              {chips.length > 0 && (
-                <motion.div
-                  className="flex flex-wrap gap-2 mb-4"
-                  initial={{ opacity:0, height:0 }}
-                  animate={{ opacity:1, height:'auto' }}
-                  exit={{    opacity:0, height:0 }}
-                  transition={{ duration:0.25 }}
-                >
-                  <AnimatePresence mode="popLayout">
-                    {chips.map((chip) => (
-                      <motion.span
-                        key={chip.id}
-                        variants={chipVariants}
-                        initial="hidden" animate="show" exit="exit"
-                        layout
-                        className="flex items-center gap-1.5 px-3 py-1 bg-pink-50 text-pink-600 text-xs rounded-full font-medium border border-pink-100"
-                      >
-                        {chip.label}
-                        <motion.button
-                          type="button"
-                          onClick={chip.clear}
-                          whileHover={{ scale: 1.3, rotate: 90 }}
-                          whileTap={{ scale: 0.8 }}
-                          transition={{ duration: 0.18 }}
-                        >
-                          <XMarkIcon className="w-3 h-3" />
-                        </motion.button>
-                      </motion.span>
-                    ))}
-                    <motion.button
-                      key="clear-all"
-                      type="button"
-                      onClick={clearAllFilters}
-                      className="px-3 py-1 text-xs text-gray-400 hover:text-pink-500 rounded-full border border-dashed border-pink-200 hover:border-pink-300 transition-colors"
-                      variants={chipVariants}
-                      initial="hidden" animate="show" exit="exit"
-                      layout
-                      whileHover={{ scale: 1.05 }}
+            {chips.length > 0 && (
+              <div className="flex flex-wrap gap-2 mb-4 items-center">
+                <AnimatePresence initial={false}>
+                  {chips.map((chip) => (
+                    <motion.div
+                      key={chip.id}
+                      initial={{ opacity: 0, scale: 0.8 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.75 }}
+                      transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-pink-50 text-pink-600 text-xs rounded-full font-medium border border-pink-100"
                     >
-                      Clear all
-                    </motion.button>
-                  </AnimatePresence>
-                </motion.div>
-              )}
-            </AnimatePresence>
+                      <span>{chip.label}</span>
+                      <button
+                        type="button"
+                        onClick={() => chip.clear()}
+                        className="ml-0.5 flex items-center justify-center w-4 h-4 rounded-full hover:bg-pink-200 hover:text-pink-900 transition-colors"
+                        aria-label={`Remove ${chip.label} filter`}
+                      >
+                        <XMarkIcon className="w-3 h-3" />
+                      </button>
+                    </motion.div>
+                  ))}
+                </AnimatePresence>
+                <button
+                  type="button"
+                  onClick={clearAllFilters}
+                  className="px-3 py-1.5 text-xs text-gray-400 hover:text-pink-500 rounded-full border border-dashed border-pink-200 hover:border-pink-300 transition-colors"
+                >
+                  Clear all
+                </button>
+              </div>
+            )}
 
             {/* ── Products / Skeleton / Empty ── */}
             <AnimatePresence mode="wait">
@@ -883,8 +888,8 @@ function ProductsContent() {
                       Clear Filters
                     </motion.button>
                     <motion.div whileHover={{ scale:1.05 }} whileTap={{ scale:0.96 }}>
-                      <Link href="/products" className="inline-block px-5 py-2.5 bg-pink-300 text-white font-semibold rounded-full hover:bg-pink-400 transition-all text-sm">
-                        Browse All
+                      <Link href={currentPageHref} onClick={clearAllFilters} className="inline-block px-5 py-2.5 bg-pink-300 text-white font-semibold rounded-full hover:bg-pink-400 transition-all text-sm">
+                        Show All
                       </Link>
                     </motion.div>
                   </div>
@@ -1018,7 +1023,7 @@ function ProductsContent() {
                 </motion.button>
               </div>
               <div className="overflow-y-auto h-[calc(100%-60px)] px-5 py-4">
-                <SidebarFilters activeCategory={activeCategory} filters={filters} setFilters={setFilters} onClearAll={clearAllFilters} hideHeader={true} />
+                <SidebarFilters activeCategory={activeCategory} filters={filters} setFilters={setFilters} onClearAll={clearAllFilters} onCategoryChange={(cat) => { handleCategoryChange(cat); setSidebarOpen(false); }} hideHeader={true} />
               </div>
             </motion.div>
           </>

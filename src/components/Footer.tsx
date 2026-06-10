@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
@@ -11,7 +11,6 @@ import {
   XMarkIcon,
   PhoneIcon,
   ClockIcon,
-  MapPinIcon,
 } from '@heroicons/react/24/outline';
 import toast from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -65,6 +64,14 @@ export default function Footer() {
   const [copied, setCopied] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [alreadyClaimed, setAlreadyClaimed] = useState(false);
+  const [subscribed, setSubscribed] = useState(true); // default true to avoid flash
+
+  useEffect(() => {
+    setSubscribed(localStorage.getItem('ziya_newsletter_subscribed') === 'true');
+  }, []);
+
+  const isHomePage = pathname === '/';
+  const showNewsletter = isHomePage && !subscribed;
 
   if (pathname.startsWith('/admin')) return null;
 
@@ -84,6 +91,8 @@ export default function Footer() {
       setAlreadyClaimed(!!data.alreadyClaimed);
       setShowModal(true);
       setEmail('');
+      localStorage.setItem('ziya_newsletter_subscribed', 'true');
+      setSubscribed(true);
     } catch {
       toast.error('Could not connect. Please try again.');
     } finally {
@@ -199,90 +208,93 @@ export default function Footer() {
       </AnimatePresence>
 
       <footer className="bg-[#1a1a2e] text-gray-300">
-        {/* Newsletter */}
-        <div className="newsletter-bg relative overflow-hidden py-10">
-          <span className="newsletter-watermark absolute right-[-2%] top-1/2 -translate-y-1/2 text-[80px] sm:text-[110px] font-black leading-none select-none pointer-events-none">
-            10%
-          </span>
-          <div className="absolute top-0 left-1/4 w-64 h-64 bg-rose-600/10 rounded-full blur-[80px] pointer-events-none" />
-          <div className="absolute bottom-0 right-1/4 w-56 h-56 bg-pink-500/10 rounded-full blur-[60px] pointer-events-none" />
-          <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-rose-500/40 to-transparent" />
+        {/* Newsletter — homepage only, hidden after subscribe */}
+        <AnimatePresence>
+          {showNewsletter && (
+            <motion.div
+              className="newsletter-bg relative overflow-hidden py-8 sm:py-10"
+              initial={{ opacity: 1 }}
+              exit={{ opacity: 0, height: 0, paddingTop: 0, paddingBottom: 0 }}
+              transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+            >
+              <span className="newsletter-watermark absolute right-[-2%] top-1/2 -translate-y-1/2 text-[60px] sm:text-[90px] lg:text-[110px] font-black leading-none select-none pointer-events-none">
+                10%
+              </span>
+              <div className="absolute top-0 left-1/4 w-64 h-64 bg-rose-600/10 rounded-full blur-[80px] pointer-events-none" />
+              <div className="absolute bottom-0 right-1/4 w-56 h-56 bg-pink-500/10 rounded-full blur-[60px] pointer-events-none" />
+              <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-rose-500/40 to-transparent" />
 
-          <div className="relative max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 xl:px-12">
-            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-8">
-              <motion.div
-                className="lg:max-w-xs"
-                initial={{ opacity: 0, x: -24 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                viewport={{ once: true, margin: '-60px' }}
-                transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
-              >
-                <div className="flex items-center gap-2 mb-3">
-                  <div className="h-px w-6 bg-rose-500/50" />
-                  <span className="text-rose-400 text-[10px] font-bold tracking-[0.3em] uppercase">Ziya Updates</span>
-                </div>
-                <h3 className="font-serif text-2xl sm:text-3xl font-bold text-white leading-tight mb-2">
-                  New arrivals.<br />
-                  <span className="italic text-rose-400">Your inbox first.</span>
-                </h3>
-                <p className="text-gray-500 text-xs leading-relaxed">
-                  Get notified the moment new Korean collections land — dresses, accessories, stationery &amp; more.
-                  Plus a <span className="text-rose-400 font-semibold">10% discount</span> on your very first order.
-                </p>
-              </motion.div>
+              <div className="relative max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 xl:px-12">
+                <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6 lg:gap-12">
+                  <motion.div
+                    className="w-full lg:max-w-xs"
+                    initial={{ opacity: 0, x: -24 }}
+                    whileInView={{ opacity: 1, x: 0 }}
+                    viewport={{ once: true, margin: '-60px' }}
+                    transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
+                  >
+                    <div className="flex items-center gap-2 mb-3">
+                      <div className="h-px w-6 bg-rose-500/50" />
+                      <span className="text-rose-400 text-[10px] font-bold tracking-[0.3em] uppercase">Ziya Updates</span>
+                    </div>
+                    <h3 className="font-serif text-xl sm:text-2xl lg:text-3xl font-bold text-white leading-tight mb-2">
+                      New arrivals.<br />
+                      <span className="italic text-rose-400">Your inbox first.</span>
+                    </h3>
+                    <p className="text-gray-500 text-xs leading-relaxed max-w-xs">
+                      Get notified the moment new Korean collections land — dresses, accessories, stationery &amp; more.
+                      Plus a <span className="text-rose-400 font-semibold">10% discount</span> on your very first order.
+                    </p>
+                  </motion.div>
 
-              <motion.div
-                className="flex-1 lg:max-w-sm"
-                initial={{ opacity: 0, x: 24 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                viewport={{ once: true, margin: '-60px' }}
-                transition={{ duration: 0.55, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
-              >
-                <div className="newsletter-card-border relative rounded-2xl p-[1px]">
-                  <div className="rounded-2xl bg-[#12121f] px-5 py-5">
-                    <p className="text-white text-sm font-semibold mb-0.5 tracking-wide">Subscribe to Ziya</p>
-                    <p className="text-gray-500 text-xs mb-4">Weekly drops, offers &amp; Korean fashion updates</p>
-                    <form onSubmit={handleSubscribe} className="space-y-3">
-                      <div className="relative group">
-                        <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-rose-500/20 to-pink-500/20 opacity-0 group-focus-within:opacity-100 blur transition-all duration-300" />
-                        <div className="relative flex items-center bg-white/5 border border-white/8 group-focus-within:border-rose-400/60 rounded-xl transition-all duration-300">
-                          <span className="pl-3 shrink-0">
-                            <motion.span
-                              whileHover={{ scale: 1.2, rotate: -10 }}
-                              transition={{ type: 'spring', stiffness: 400 }}
-                              className="block"
-                            >
-                              <EnvelopeIcon className="w-4 h-4 text-rose-400/70" />
-                            </motion.span>
-                          </span>
-                          <input
-                            type="email"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            placeholder="your@email.com"
-                            required
+                  <motion.div
+                    className="w-full lg:flex-1 lg:max-w-sm"
+                    initial={{ opacity: 0, x: 24 }}
+                    whileInView={{ opacity: 1, x: 0 }}
+                    viewport={{ once: true, margin: '-60px' }}
+                    transition={{ duration: 0.55, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
+                  >
+                    <div className="newsletter-card-border relative rounded-2xl p-[1px]">
+                      <div className="rounded-2xl bg-[#12121f] px-4 sm:px-5 py-4 sm:py-5">
+                        <p className="text-white text-sm font-semibold mb-0.5 tracking-wide">Subscribe to Ziya</p>
+                        <p className="text-gray-500 text-xs mb-4">Weekly drops, offers &amp; Korean fashion updates</p>
+                        <form onSubmit={handleSubscribe} className="space-y-3">
+                          <div className="relative group">
+                            <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-rose-500/20 to-pink-500/20 opacity-0 group-focus-within:opacity-100 blur transition-all duration-300" />
+                            <div className="relative flex items-center bg-white/5 border border-white/8 group-focus-within:border-rose-400/60 rounded-xl transition-all duration-300">
+                              <span className="pl-3 shrink-0">
+                                <EnvelopeIcon className="w-4 h-4 text-rose-400/70" />
+                              </span>
+                              <input
+                                type="email"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                placeholder="your@email.com"
+                                required
+                                disabled={loading}
+                                className="w-full px-3 py-2.5 bg-transparent text-white text-sm placeholder-gray-600 focus:outline-none disabled:opacity-60"
+                              />
+                            </div>
+                          </div>
+                          <motion.button
+                            type="submit"
                             disabled={loading}
-                            className="w-full px-3 py-2.5 bg-transparent text-white text-sm placeholder-gray-600 focus:outline-none disabled:opacity-60"
-                          />
-                        </div>
+                            className="newsletter-submit-btn w-full py-2.5 rounded-xl font-bold text-sm text-white tracking-wide disabled:opacity-60 disabled:cursor-not-allowed"
+                            whileHover={{ scale: loading ? 1 : 1.02 }}
+                            whileTap={{ scale: loading ? 1 : 0.97 }}
+                          >
+                            {loading ? 'Getting your coupon...' : 'Get My 10% Off →'}
+                          </motion.button>
+                        </form>
                       </div>
-                      <motion.button
-                        type="submit"
-                        disabled={loading}
-                        className="newsletter-submit-btn w-full py-2.5 rounded-xl font-bold text-sm text-white tracking-wide disabled:opacity-60 disabled:cursor-not-allowed"
-                        whileHover={{ scale: loading ? 1 : 1.02 }}
-                        whileTap={{ scale: loading ? 1 : 0.97 }}
-                      >
-                        {loading ? 'Getting your coupon...' : 'Get My 10% Off →'}
-                      </motion.button>
-                    </form>
-                  </div>
+                    </div>
+                  </motion.div>
                 </div>
-              </motion.div>
-            </div>
-          </div>
-          <div className="absolute bottom-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-white/5 to-transparent" />
-        </div>
+              </div>
+              <div className="absolute bottom-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-white/5 to-transparent" />
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Main footer */}
         <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 py-12">

@@ -19,8 +19,8 @@ const imageVariant = {
 };
 
 const badgeFloat = {
-  hidden: { opacity: 0, y: 16, scale: 0.85 },
-  show: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.55, ease: [0.34, 1.56, 0.64, 1] } },
+  hidden: { opacity: 0, scale: 0.85 },
+  show: { opacity: 1, scale: 1, transition: { duration: 0.55, ease: [0.34, 1.56, 0.64, 1] } },
 };
 
 export default function HeroSection() {
@@ -94,35 +94,65 @@ export default function HeroSection() {
                 <div className="hero-cloud-overlay absolute inset-0 pointer-events-none" />
               </div>
 
-              {/* Free Shipping badge */}
-              <motion.div
-                variants={badgeFloat}
-                initial="hidden"
-                animate="show"
-                transition={{ delay: 0.7 }}
-                className="absolute -bottom-4 -left-2 sm:-left-8 bg-white/90 backdrop-blur-md rounded-lg sm:rounded-2xl px-2 py-1.5 sm:px-4 sm:py-3 shadow-lg shadow-rose-100/50 border border-white/70 flex items-center gap-1.5 sm:gap-3"
-              >
-                <span className="w-5 h-5 sm:w-9 sm:h-9 rounded-md sm:rounded-xl bg-rose-50 flex items-center justify-center shrink-0">
-                  <TruckIcon className="truck-icon w-3 h-3 sm:w-5 sm:h-5 text-rose-400" />
-                </span>
-                <div>
-                  <p className="text-[8px] sm:text-xs text-gray-400 font-medium leading-none mb-0.5">Free Shipping</p>
-                  <p className="text-[9px] sm:text-sm font-bold text-gray-800 leading-none">Orders above ₹999</p>
-                </div>
-              </motion.div>
+              {/* Free Shipping badge — liquid glass card */}
+              <div className="absolute -bottom-6 -left-2 sm:-left-8 badge-pulse-bottom">
+                <motion.div
+                  variants={badgeFloat}
+                  initial="hidden"
+                  animate="show"
+                  transition={{ delay: 0.7 }}
+                  className="shipping-glass-card"
+                >
+                  <div className="glass-sweep" />
+                  <div className="delivery-orb">
+                    <TruckIcon className="truck-icon w-4 h-4 sm:w-6 sm:h-6 text-white relative z-10" />
+                    <div className="delivery-road">
+                      <div className="road-dashes">
+                        {[0,1,2,3,4,5,6,7].map(i => <div key={i} className="road-dash" />)}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="shipping-glass-texts">
+                    <span className="shipping-free-label">FREE</span>
+                    <div className="shipping-detail-row">
+                      <span className="shipping-on-label">SHIPPING on</span>
+                      <span className="shipping-amt-pill">₹999+</span>
+                    </div>
+                  </div>
+                  <div className="shipping-check-glass">✓</div>
+                </motion.div>
+              </div>
 
-              {/* Trending badge */}
-              <motion.div
-                variants={badgeFloat}
-                initial="hidden"
-                animate="show"
-                transition={{ delay: 0.85 }}
-                className="absolute -top-2 -right-2 sm:-right-5 bg-gradient-to-br from-rose-400 to-orange-400 text-white rounded-lg sm:rounded-2xl px-1.5 py-1 sm:px-3 sm:py-2.5 shadow-md shadow-rose-400/40 border border-white/20 text-center flex flex-col items-center gap-0.5"
-              >
-                <FireIcon className="flame-icon w-2.5 h-2.5 sm:w-4 sm:h-4 text-yellow-200 drop-shadow" />
-                <p className="text-[7px] sm:text-xs font-bold tracking-wide leading-none">TRENDING</p>
-                <p className="text-[6px] sm:text-[10px] opacity-80 leading-none">Now</p>
-              </motion.div>
+              {/* Trending badge — aurora glass pill (horizontal) */}
+              <div className="absolute -top-5 right-0 sm:-right-4 badge-pulse-top">
+                <motion.div
+                  variants={badgeFloat}
+                  initial="hidden"
+                  animate="show"
+                  transition={{ delay: 0.85 }}
+                >
+                  <div className="trending-pill-ring">
+                    <div className="trending-pill-glass">
+                      <div className="trending-pill-aurora" />
+                      <div className="trending-pill-shine" />
+                      <div className="trending-fire-orb">
+                        <FireIcon className="flame-icon w-4 h-4 sm:w-5 sm:h-5 text-rose-500 relative z-10" />
+                        <div className="orbit-spark orbit-spark-a" />
+                        <div className="orbit-spark orbit-spark-b" />
+                      </div>
+                      <div className="trending-pill-texts">
+                        <span className="trending-pill-label">TRENDING</span>
+                        <div className="trending-pill-sub">
+                          <span className="trending-pill-now">NOW</span>
+                        </div>
+                      </div>
+                      <div className="trending-live-ring">
+                        <div className="trending-live-core" />
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
+              </div>
             </div>
           </motion.div>
 

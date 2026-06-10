@@ -8,7 +8,6 @@ import toast from 'react-hot-toast';
 import {
   EyeIcon,
   EyeSlashIcon,
-  EnvelopeIcon,
   LockClosedIcon,
   UserIcon,
   ArrowRightIcon,
@@ -17,11 +16,79 @@ import {
 } from '@heroicons/react/24/outline';
 import { motion, AnimatePresence } from 'framer-motion';
 
+/* ─── Animated envelope icon — flap morphs open on focus ─── */
+function AnimatedEnvelopeIcon({ focused, active }: { focused: boolean; active: boolean }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.5}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className="w-4 h-4 overflow-visible"
+    >
+      {/* Envelope body */}
+      <rect x="2" y="6" width="20" height="14" rx="2" />
+      {/* Flap — morphs from V-down (closed) to V-up (open) on focus */}
+      <motion.path
+        animate={{
+          d: focused
+            ? 'M2 6 L12 2 L22 6'
+            : active
+              ? 'M2 7 L12 12 L22 7'
+              : 'M2 8 L12 14 L22 8',
+        }}
+        transition={{ duration: 0.38, ease: [0.22, 1, 0.36, 1] }}
+      />
+      {/* Sparkle that pops out when opened */}
+      <AnimatePresence>
+        {focused && (
+          <motion.g
+            initial={{ opacity: 0, scale: 0, y: 0 }}
+            animate={{ opacity: 1, scale: 1, y: -3 }}
+            exit={{ opacity: 0, scale: 0, y: 0 }}
+            transition={{ delay: 0.18, duration: 0.3, ease: [0.34, 1.56, 0.64, 1] }}
+          >
+            <circle cx="12" cy="3" r="1" fill="currentColor" opacity={0.6} />
+            <circle cx="9" cy="2" r="0.5" fill="currentColor" opacity={0.4} />
+            <circle cx="15" cy="2" r="0.5" fill="currentColor" opacity={0.4} />
+          </motion.g>
+        )}
+      </AnimatePresence>
+    </svg>
+  );
+}
+
+/* ─── Bottom-left badge unique animation variants ─── */
+const badgeAnimations = [
+  // 🌸 Free to Join — petal spin + bloom
+  {
+    animate: { rotate: [0, 15, -10, 20, 0, -15, 10, 0], scale: [1, 1.18, 0.95, 1.22, 1, 0.92, 1.15, 1] },
+    transition: { duration: 4.5, repeat: Infinity, ease: 'easeInOut', repeatDelay: 1 },
+  },
+  // 🎁 Welcome Gift — bounce + "open" scale pop
+  {
+    animate: { y: [0, -6, 0, -3, 0], scale: [1, 1.15, 0.9, 1.2, 1], rotate: [0, -5, 5, -3, 0] },
+    transition: { duration: 2.8, repeat: Infinity, ease: [0.34, 1.56, 0.64, 1], repeatDelay: 1.2 },
+  },
+  // 💎 VIP Access — diamond rotation + shimmer glow pulse
+  {
+    animate: { rotate: [0, 10, -10, 15, -5, 0], scale: [1, 1.2, 0.95, 1.25, 0.98, 1], opacity: [0.85, 1, 0.9, 1, 0.88, 0.85] },
+    transition: { duration: 3.5, repeat: Infinity, ease: [0.22, 1, 0.36, 1], repeatDelay: 0.8 },
+  },
+  // 🛍️ Shop Smarter — bag swing animation
+  {
+    animate: { rotate: [-12, 0, 12, 0, -12], y: [0, -4, 0, -4, 0], scale: [0.95, 1.05, 0.95, 1.05, 0.95] },
+    transition: { duration: 2.0, repeat: Infinity, ease: [0.34, 1.56, 0.64, 1], repeatDelay: 1 },
+  },
+];
+
 const floatingBadges = [
-  { emoji: '🌸', label: 'Free to Join', top: '6%',  left: '5%',  delay: 0.65 },
-  { emoji: '🎁', label: 'Welcome Gift', top: '88%', left: '5%',  delay: 0.95 },
-  { emoji: '💎', label: 'VIP Access',   top: '8%',  right: '4%', delay: 0.8  },
-  { emoji: '🛍️', label: 'Shop Smarter', top: '88%', right: '4%', delay: 1.05 },
+  { emoji: '🌸', label: 'Free to Join' },
+  { emoji: '🎁', label: 'Welcome Gift' },
+  { emoji: '💎', label: 'VIP Access'   },
+  { emoji: '🛍️', label: 'Shop Smarter' },
 ];
 
 const perks = [
@@ -31,6 +98,34 @@ const perks = [
   { icon: '⭐', text: 'Earn reward points on every purchase' },
 ];
 
+/* ─── Per-perk icon animations ─── */
+const perkIconAnimations = [
+  // 🎀 — ribbon elastic twist
+  {
+    animate: { rotate: [0, -18, 18, -10, 10, 0], scale: [1, 0.92, 1.08, 0.95, 1.05, 1] },
+    transition: { duration: 2.8, repeat: Infinity, ease: [0.34, 1.56, 0.64, 1], repeatDelay: 1.6 },
+    glow: 'shadow-[0_0_14px_rgba(244,114,182,0.55)]',
+  },
+  // 📦 — box bounce + "drop" feel
+  {
+    animate: { y: [0, -5, 1, -3, 0], scale: [1, 0.95, 1.08, 0.98, 1] },
+    transition: { duration: 2.0, repeat: Infinity, ease: [0.34, 1.56, 0.64, 1], repeatDelay: 2 },
+    glow: 'shadow-[0_0_14px_rgba(251,191,36,0.45)]',
+  },
+  // 💌 — envelope heartbeat float
+  {
+    animate: { scale: [1, 1.22, 1, 1.15, 1], y: [0, -4, 0, -2, 0] },
+    transition: { duration: 2.0, repeat: Infinity, ease: [0.34, 1.56, 0.64, 1], repeatDelay: 1.8 },
+    glow: 'shadow-[0_0_14px_rgba(249,168,212,0.55)]',
+  },
+  // ⭐ — star twinkle: scale + opacity flicker + slight spin
+  {
+    animate: { scale: [1, 1.3, 0.9, 1.2, 1], opacity: [0.8, 1, 0.7, 1, 0.8], rotate: [0, 20, -10, 15, 0] },
+    transition: { duration: 2.4, repeat: Infinity, ease: 'easeInOut', repeatDelay: 1.2 },
+    glow: 'shadow-[0_0_14px_rgba(251,211,36,0.55)]',
+  },
+];
+
 function InputField({
   id,
   type,
@@ -38,6 +133,8 @@ function InputField({
   onChange,
   placeholder,
   icon: Icon,
+  iconVariant,
+  onFocusChange,
   suffix,
   required,
   delay,
@@ -48,7 +145,9 @@ function InputField({
   value: string;
   onChange: (v: string) => void;
   placeholder: string;
-  icon: React.ElementType;
+  icon?: React.ElementType;
+  iconVariant?: 'email';
+  onFocusChange?: (v: boolean) => void;
   suffix?: React.ReactNode;
   required?: boolean;
   delay?: number;
@@ -57,52 +156,96 @@ function InputField({
   const [focused, setFocused] = useState(false);
   const active = focused || value.length > 0;
 
+  const handleFocus = () => { setFocused(true); onFocusChange?.(true); };
+  const handleBlur = () => { setFocused(false); onFocusChange?.(false); };
+
   return (
     <motion.div
-      initial={{ opacity: 0, y: 14 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.42, delay: delay ?? 0, ease: [0.22, 1, 0.36, 1] }}
+      initial={{ opacity: 0, y: 20, scale: 0.93, filter: 'blur(7px)' }}
+      animate={{ opacity: 1, y: 0, scale: 1, filter: 'blur(0px)' }}
+      transition={{ duration: 0.55, delay: delay ?? 0, ease: [0.22, 1, 0.36, 1] }}
       className="relative"
     >
-      <div
-        className={`relative flex items-center rounded-2xl border transition-all duration-300 overflow-hidden
-          ${active
-            ? 'border-rose-400 shadow-[0_0_0_3px_rgba(251,113,133,0.15)]'
-            : 'border-gray-200 hover:border-gray-300'
-          } bg-white`}
+      <motion.div
+        animate={{ scale: focused ? 1.018 : 1 }}
+        transition={{ type: 'spring', stiffness: 360, damping: 26 }}
+        className={`relative flex items-center rounded-2xl border transition-colors duration-300 overflow-hidden
+          ${focused
+            ? 'border-rose-400 bg-rose-50/30 shadow-[0_0_0_3.5px_rgba(251,113,133,0.16),inset_0_1px_3px_rgba(251,113,133,0.05)]'
+            : active
+              ? 'border-rose-300/55 bg-white'
+              : 'border-gray-200 bg-white hover:border-rose-200 hover:bg-rose-50/15'
+          }`}
       >
-        <span className={`absolute left-4 transition-colors duration-200 ${active ? 'text-rose-400' : 'text-gray-300'}`}>
-          <Icon className="w-4 h-4" />
-        </span>
+        {/* Shimmer sweep on each focus */}
+        <AnimatePresence>
+          {focused && (
+            <motion.div
+              className="absolute inset-0 pointer-events-none overflow-hidden rounded-2xl"
+              exit={{ opacity: 0, transition: { duration: 0.18 } }}
+            >
+              <motion.div
+                className="auth-input-shimmer absolute inset-y-0 w-1/2"
+                initial={{ left: '-52%' }}
+                animate={{ left: '152%' }}
+                transition={{ duration: 0.62, ease: [0.22, 1, 0.36, 1] }}
+              />
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Icon — spring scale + color, email gets animated envelope */}
+        <motion.span
+          className="absolute left-4 flex"
+          animate={{
+            color: active ? 'rgb(251,113,133)' : 'rgb(209,213,219)',
+            scale: active ? 1.2 : 1,
+          }}
+          transition={{ type: 'spring', stiffness: 440, damping: 22 }}
+        >
+          {iconVariant === 'email' ? (
+            <AnimatedEnvelopeIcon focused={focused} active={active} />
+          ) : Icon ? (
+            <Icon className="w-4 h-4" />
+          ) : null}
+        </motion.span>
 
         <input
           id={id}
           type={type}
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          onFocus={() => setFocused(true)}
-          onBlur={() => setFocused(false)}
+          onFocus={handleFocus}
+          onBlur={handleBlur}
           required={required}
           placeholder=""
-          autoComplete={autoComplete}
+          {...(autoComplete ? { autoComplete } : {})}
           className="w-full pt-5 pb-2 pl-11 pr-11 text-sm text-gray-800 bg-transparent focus:outline-none"
         />
 
         <label
           htmlFor={id}
-          className={`absolute left-11 pointer-events-none transition-all duration-200 font-medium
+          className={`absolute left-11 pointer-events-none font-medium
+            transition-[top,font-size,color,letter-spacing] duration-[220ms] ease-[cubic-bezier(0.22,1,0.36,1)]
             ${active
-              ? 'top-[7px] text-[10px] text-rose-400 tracking-wider uppercase'
-              : 'top-1/2 -translate-y-1/2 text-[13px] text-gray-400'
-            }`}
+              ? 'top-[7px] text-[10px] tracking-[0.07em] uppercase'
+              : 'top-1/2 -translate-y-1/2 text-[13px] tracking-normal'
+            }
+            ${focused ? 'text-rose-400' : active ? 'text-rose-300' : 'text-gray-400'}`}
         >
           {placeholder}
         </label>
 
-        {suffix && (
-          <div className="absolute right-3.5">{suffix}</div>
-        )}
-      </div>
+        {suffix && <div className="absolute right-3.5">{suffix}</div>}
+
+        {/* Bottom accent line */}
+        <motion.div
+          className="absolute bottom-0 left-0 right-0 h-[2px] bg-gradient-to-r from-rose-300 via-rose-400 to-pink-400 origin-center"
+          initial={{ scaleX: 0, opacity: 0 }}
+          animate={focused ? { scaleX: 1, opacity: 1 } : { scaleX: 0, opacity: 0 }}
+          transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
+        />
+      </motion.div>
     </motion.div>
   );
 }
@@ -205,50 +348,12 @@ function RegisterContent() {
 
         <div className="absolute inset-0 opacity-[0.05] pointer-events-none auth-dot-grid" />
 
-        {/* Floating badges */}
-        {floatingBadges.map((b, i) => (
-          <motion.div
-            key={i}
-            className="absolute z-[1] flex items-center gap-2 bg-white/8 backdrop-blur-sm border border-white/10 rounded-full px-3 py-1.5 text-white/75 text-[11px] font-semibold shadow-md"
-            style={{ top: b.top, left: b.left, right: (b as { right?: string }).right }}
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1, y: [0, -3, 0] }}
-            transition={{
-              opacity: { delay: b.delay, duration: 0.5 },
-              scale: { delay: b.delay, duration: 0.5, ease: [0.34, 1.56, 0.64, 1] },
-              y: { delay: b.delay + 0.5, duration: 4 + i * 0.4, repeat: Infinity, ease: 'easeInOut' },
-            }}
-          >
-            <span>{b.emoji}</span>
-            <span>{b.label}</span>
-          </motion.div>
-        ))}
-
-        {/* Logo */}
-        <motion.div
-          className="relative z-20"
-          initial={{ opacity: 0, y: -16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3, duration: 0.5 }}
-        >
-          <Link href="/">
-            <Image
-              src="/ziya-logo.png"
-              alt="Ziya"
-              width={140}
-              height={52}
-              className="h-12 w-auto object-contain brightness-0 invert opacity-90"
-              priority
-            />
-          </Link>
-        </motion.div>
-
         {/* Center content */}
         <motion.div
           className="relative z-20"
           initial={{ opacity: 0, y: 24 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.45, duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+          transition={{ delay: 0.35, duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
         >
           <div className="flex items-center gap-2 mb-4">
             <SparklesIcon className="w-4 h-4 text-rose-300" />
@@ -266,18 +371,64 @@ function RegisterContent() {
             {perks.map((p, i) => (
               <motion.div
                 key={i}
-                className="flex items-center gap-3"
+                className="flex items-center gap-3 group/perk cursor-default"
                 initial={{ opacity: 0, x: -16 }}
                 animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.62 + i * 0.1, duration: 0.45 }}
+                transition={{ delay: 0.52 + i * 0.1, duration: 0.45 }}
+                whileHover={{ x: 4, transition: { type: 'spring', stiffness: 400, damping: 22 } }}
               >
-                <div className="w-8 h-8 rounded-full bg-white/10 backdrop-blur flex items-center justify-center text-sm flex-shrink-0">
-                  {p.icon}
+                {/* Icon circle — glows + continuous unique animation */}
+                <motion.div
+                  className={`w-8 h-8 rounded-full bg-white/10 backdrop-blur flex items-center justify-center text-sm flex-shrink-0 border border-white/10 group-hover/perk:border-rose-400/40 group-hover/perk:bg-white/18 transition-colors duration-300 ${perkIconAnimations[i].glow}`}
+                  whileHover={{ scale: 1.18 }}
+                  transition={{ type: 'spring', stiffness: 400, damping: 18 }}
+                >
+                  <motion.span
+                    className="inline-block"
+                    animate={perkIconAnimations[i].animate}
+                    transition={{ ...perkIconAnimations[i].transition, delay: 1.0 + i * 0.4 }}
+                  >
+                    {p.icon}
+                  </motion.span>
+                </motion.div>
+                <div className="flex-1">
+                  <span className="text-gray-300 text-sm group-hover/perk:text-white transition-colors duration-200">{p.text}</span>
+                  <div className="h-px bg-gradient-to-r from-rose-400/60 to-transparent mt-0.5 origin-left scale-x-0 group-hover/perk:scale-x-100 transition-transform duration-300" />
                 </div>
-                <span className="text-gray-300 text-sm">{p.text}</span>
               </motion.div>
             ))}
           </div>
+        </motion.div>
+
+        {/* Feature badges grid — unique animation per badge */}
+        <motion.div
+          className="relative z-20 grid grid-cols-2 gap-2.5"
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.9, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+        >
+          {floatingBadges.map((b, i) => (
+            <motion.div
+              key={i}
+              className="flex items-center gap-2.5 bg-white/5 hover:bg-white/8 border border-white/8 hover:border-rose-400/25 rounded-2xl px-3.5 py-3 backdrop-blur-sm transition-colors duration-300 cursor-default"
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.95 + i * 0.07, duration: 0.4 }}
+              whileHover={{ scale: 1.05, borderColor: 'rgba(251,113,133,0.35)' }}
+              whileTap={{ scale: 0.96 }}
+            >
+              <span className="w-8 h-8 rounded-xl bg-white/10 flex items-center justify-center text-base flex-shrink-0 overflow-hidden">
+                <motion.span
+                  animate={badgeAnimations[i].animate}
+                  transition={{ ...badgeAnimations[i].transition, delay: 1.2 + i * 0.3 }}
+                  className="inline-block"
+                >
+                  {b.emoji}
+                </motion.span>
+              </span>
+              <span className="text-white/65 text-[11px] font-semibold leading-tight">{b.label}</span>
+            </motion.div>
+          ))}
         </motion.div>
 
         <motion.p
@@ -291,38 +442,74 @@ function RegisterContent() {
       </motion.div>
 
       {/* Right panel — form */}
-      <div className="flex-1 flex flex-col items-center justify-center px-6 sm:px-10 py-12 bg-[#fafafa]">
+      <div className="flex-1 flex flex-col items-center justify-start lg:justify-center px-6 sm:px-10 pt-7 pb-28 sm:pt-10 sm:pb-10 lg:py-12 bg-[#fafafa] relative overflow-hidden">
+
+        {/* Background orbs */}
+        <div className="absolute top-[-12%] right-[-10%] w-[420px] h-[420px] bg-rose-100/55 rounded-full blur-[110px] pointer-events-none" />
+        <div className="absolute bottom-[-10%] left-[-8%] w-[360px] h-[360px] bg-pink-100/45 rounded-full blur-[95px] pointer-events-none" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[520px] h-[280px] bg-rose-50/40 rounded-full blur-[130px] pointer-events-none" />
+
+        {/* Dot grid */}
+        <div className="auth-form-dot-grid absolute inset-0 pointer-events-none opacity-[0.32]" />
+
         {/* Mobile logo */}
         <motion.div
-          className="lg:hidden mb-8 text-center"
-          initial={{ opacity: 0, y: -12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.45 }}
+          className="lg:hidden mb-8 text-center relative z-10"
+          initial={{ opacity: 0, y: -18, scale: 0.88 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          transition={{ duration: 0.5, ease: [0.34, 1.56, 0.64, 1] }}
         >
           <Link href="/">
             <Image src="/ziya-logo.png" alt="Ziya" width={130} height={48} className="h-11 w-auto object-contain mx-auto" priority />
           </Link>
         </motion.div>
 
-        <div className="w-full max-w-[420px]">
+        <div className="w-full max-w-[420px] relative z-10">
           {/* Header */}
-          <motion.div
-            className="mb-7"
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-          >
-            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 font-serif mb-1.5">Create account</h1>
-            <p className="text-gray-400 text-sm">Join Ziya and start your Korean fashion journey</p>
-          </motion.div>
+          <div className="mb-7">
+            <motion.div
+              className="inline-flex items-center gap-1.5 bg-rose-50 border border-rose-100 rounded-full px-3 py-1 mb-4"
+              initial={{ opacity: 0, scale: 0.72, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              transition={{ delay: 0.04, duration: 0.5, type: 'spring', stiffness: 260, damping: 20 }}
+            >
+              <motion.span
+                className="text-xs"
+                animate={{ rotate: [0, 18, -12, 6, 0] }}
+                transition={{ delay: 0.65, duration: 0.9, ease: 'easeInOut' }}
+              >
+                🌸
+              </motion.span>
+              <span className="text-rose-500 text-[11px] font-semibold tracking-wide">Free to join · No card needed</span>
+            </motion.div>
+
+            <motion.h1
+              className="text-2xl sm:text-3xl font-bold text-gray-900 font-serif mb-1.5"
+              initial={{ opacity: 0, y: 14, filter: 'blur(6px)' }}
+              animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+              transition={{ delay: 0.1, duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
+            >
+              Create account
+            </motion.h1>
+            <motion.p
+              className="text-gray-400 text-sm"
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.19, duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+            >
+              Join Ziya and start your Korean fashion journey
+            </motion.p>
+          </div>
 
           {/* Card */}
-          <motion.div
-            className="bg-white rounded-3xl shadow-sm border border-gray-100/80 p-7 sm:p-8"
-            initial={{ opacity: 0, y: 20, scale: 0.97 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            transition={{ duration: 0.5, delay: 0.08, ease: [0.22, 1, 0.36, 1] }}
-          >
+          <div className="relative group/card">
+            <div className="absolute -inset-[1.5px] rounded-[26px] bg-gradient-to-br from-rose-200/70 via-transparent to-pink-200/70 opacity-0 group-hover/card:opacity-100 transition-opacity duration-500 pointer-events-none" />
+            <motion.div
+              className="relative bg-white rounded-3xl shadow-[0_2px_20px_rgba(0,0,0,0.06),0_0_0_1px_rgba(0,0,0,0.04)] p-7 sm:p-8"
+              initial={{ opacity: 0, y: 26, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              transition={{ duration: 0.58, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
+            >
             <form onSubmit={handleSubmit} className="space-y-4">
               <InputField
                 id="reg-name"
@@ -342,7 +529,7 @@ function RegisterContent() {
                 value={form.email}
                 onChange={(v) => setForm({ ...form, email: v })}
                 placeholder="Email address"
-                icon={EnvelopeIcon}
+                iconVariant="email"
                 required
                 delay={0.2}
                 autoComplete="email"
@@ -472,14 +659,15 @@ function RegisterContent() {
                 </AnimatePresence>
               </motion.button>
             </form>
-          </motion.div>
+            </motion.div>
+          </div>
 
           {/* Footer links */}
           <motion.div
             className="mt-6 text-center space-y-3"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.55, duration: 0.4 }}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.58, duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
           >
             <p className="text-sm text-gray-500">
               Already have an account?{' '}
@@ -490,6 +678,20 @@ function RegisterContent() {
                 Sign in →
               </Link>
             </p>
+            <motion.div
+              className="flex items-center justify-center gap-4 py-1"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.72, duration: 0.4 }}
+            >
+              <span className="flex items-center gap-1.5 text-[11px] text-gray-400">
+                <span>🔒</span>SSL Secured
+              </span>
+              <span className="w-px h-3 bg-gray-200" />
+              <span className="flex items-center gap-1.5 text-[11px] text-gray-400">
+                <span>🛡️</span>Privacy Protected
+              </span>
+            </motion.div>
             <p className="text-xs text-gray-400">
               By creating an account, you agree to our{' '}
               <Link href="/terms" className="text-rose-400 hover:underline">Terms</Link>

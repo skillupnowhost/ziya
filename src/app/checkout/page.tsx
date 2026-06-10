@@ -15,6 +15,88 @@ declare global {
   }
 }
 
+/* ─── Realistic QR code SVG ─── */
+function QRCodeDisplay({ amount }: { amount: number }) {
+  // 21×21 grid pattern — 1 = black, 0 = white
+  // Includes real position-detection squares + realistic data region
+  const grid = [
+    [1,1,1,1,1,1,1,0,1,0,1,0,1,0,1,1,1,1,1,1,1],
+    [1,0,0,0,0,0,1,0,0,1,0,1,0,0,1,0,0,0,0,0,1],
+    [1,0,1,1,1,0,1,0,1,0,1,0,1,0,1,0,1,1,1,0,1],
+    [1,0,1,1,1,0,1,0,0,1,1,0,0,1,1,0,1,1,1,0,1],
+    [1,0,1,1,1,0,1,0,1,1,0,0,1,0,1,0,1,1,1,0,1],
+    [1,0,0,0,0,0,1,0,0,0,1,1,0,0,1,0,0,0,0,0,1],
+    [1,1,1,1,1,1,1,0,1,0,1,0,1,0,1,1,1,1,1,1,1],
+    [0,0,0,0,0,0,0,0,1,1,0,1,0,0,0,0,0,0,0,0,0],
+    [1,1,0,1,1,0,1,1,0,1,1,0,1,1,0,1,0,1,1,0,1],
+    [0,1,0,0,1,1,0,1,1,0,0,1,1,0,1,0,1,1,0,1,0],
+    [1,0,1,1,0,0,1,0,1,1,0,0,1,0,0,1,1,0,1,0,1],
+    [0,0,1,0,0,1,0,1,0,0,1,1,0,1,0,0,1,1,0,0,0],
+    [1,1,0,0,1,0,1,0,1,1,1,0,1,0,1,1,0,0,1,1,0],
+    [0,0,0,0,0,0,0,0,1,0,0,1,0,0,1,0,1,0,0,0,1],
+    [1,1,1,1,1,1,1,0,0,1,1,0,1,0,1,0,0,1,1,0,0],
+    [1,0,0,0,0,0,1,0,1,0,0,1,0,1,0,1,1,0,0,1,1],
+    [1,0,1,1,1,0,1,0,0,1,1,0,1,0,1,0,1,1,0,0,1],
+    [1,0,1,1,1,0,1,0,1,0,0,1,0,1,0,1,0,0,1,1,0],
+    [1,0,1,1,1,0,1,0,1,1,1,0,1,0,1,1,1,0,0,1,1],
+    [1,0,0,0,0,0,1,0,0,1,0,1,0,0,0,1,0,1,1,0,0],
+    [1,1,1,1,1,1,1,0,1,0,1,1,1,0,1,0,1,1,0,1,1],
+  ];
+
+  return (
+    <motion.div
+      className="mt-4 p-5 bg-gradient-to-br from-rose-50 to-pink-50 border border-rose-100 rounded-2xl"
+      initial={{ opacity: 0, y: 10, scale: 0.97 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      exit={{ opacity: 0, y: 8, scale: 0.97 }}
+      transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+    >
+      <p className="text-xs font-semibold text-rose-500 text-center uppercase tracking-widest mb-3">Scan &amp; Pay</p>
+      <div className="flex flex-col items-center gap-3">
+        {/* QR Code box */}
+        <motion.div
+          className="bg-white p-3 rounded-xl border-2 border-rose-200 shadow-sm relative"
+          whileHover={{ scale: 1.03 }}
+          transition={{ type: 'spring', stiffness: 300, damping: 22 }}
+        >
+          {/* Subtle scan-line animation */}
+          <motion.div
+            className="absolute left-3 right-3 h-0.5 bg-gradient-to-r from-transparent via-rose-400/60 to-transparent rounded-full pointer-events-none z-10"
+            animate={{ top: ['12px', 'calc(100% - 12px)', '12px'] }}
+            transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut' }}
+          />
+          <svg viewBox="0 0 21 21" className="w-44 h-44" shapeRendering="crispEdges">
+            {grid.map((row, y) =>
+              row.map((cell, x) =>
+                cell ? (
+                  <rect key={`${x}-${y}`} x={x} y={y} width={1} height={1} fill="#111827" />
+                ) : null
+              )
+            )}
+          </svg>
+        </motion.div>
+
+        {/* Payment info */}
+        <div className="text-center space-y-1">
+          <p className="text-sm font-bold text-gray-800">₹{amount.toLocaleString()}</p>
+          <p className="text-xs text-gray-500">UPI · GPay · PhonePe · Paytm</p>
+          <p className="text-[11px] text-rose-400 font-medium">ziya@upi · Ziya Fashion</p>
+        </div>
+
+        {/* Instructions */}
+        <div className="w-full space-y-1.5 text-xs text-gray-500">
+          {['Open any UPI app on your phone', 'Tap "Scan QR" and point at this code', 'Confirm the amount and pay'].map((step, i) => (
+            <div key={i} className="flex items-center gap-2">
+              <span className="w-4 h-4 rounded-full bg-rose-100 text-rose-500 font-bold flex items-center justify-center text-[10px] flex-shrink-0">{i + 1}</span>
+              <span>{step}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
 function CheckoutContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -46,7 +128,7 @@ function CheckoutContent() {
     pincode: '',
     country: 'India',
   });
-  const [paymentMethod, setPaymentMethod] = useState<'razorpay' | 'upi' | 'cod'>('razorpay');
+  const [paymentMethod, setPaymentMethod] = useState<'razorpay' | 'upi' | 'qr' | 'cod'>('razorpay');
 
   useEffect(() => {
     if (!user) router.push('/auth/login?redirect=/checkout');
@@ -115,7 +197,7 @@ function CheckoutContent() {
       const orderRes = await axios.post('/api/orders', {
         items: items.map(i => ({ productId: i.productId, quantity: i.quantity, size: i.size, color: i.color })),
         shippingAddress: address,
-        paymentMethod,
+        paymentMethod: paymentMethod === 'qr' ? 'upi' : paymentMethod,
         promoCode,
       });
 
@@ -127,6 +209,7 @@ function CheckoutContent() {
         return;
       }
 
+      // QR and other online methods go through Razorpay
       const loaded = await loadRazorpay();
       if (!loaded) { toast.error('Payment gateway failed to load'); return; }
 
@@ -323,6 +406,7 @@ function CheckoutContent() {
                   {[
                     { value: 'razorpay', label: 'Credit / Debit Card', sub: 'Visa, Mastercard, RuPay', icon: '💳' },
                     { value: 'upi', label: 'UPI', sub: 'GPay, PhonePe, Paytm', icon: '📱' },
+                    { value: 'qr', label: 'QR Code', sub: 'Scan with any UPI app', icon: '⬛' },
                     { value: 'cod', label: 'Cash on Delivery', sub: 'Pay when delivered', icon: '💵' },
                   ].map((method, i) => (
                     <motion.label
@@ -343,7 +427,7 @@ function CheckoutContent() {
                         value={method.value}
                         title={method.label}
                         checked={paymentMethod === method.value}
-                        onChange={() => setPaymentMethod(method.value as typeof paymentMethod)}
+                        onChange={() => setPaymentMethod(method.value as 'razorpay' | 'upi' | 'qr' | 'cod')}
                         className="accent-rose-400"
                       />
                       <motion.span
@@ -373,6 +457,11 @@ function CheckoutContent() {
                     </motion.label>
                   ))}
                 </div>
+
+                {/* QR code panel — shown inline when QR is selected */}
+                <AnimatePresence>
+                  {paymentMethod === 'qr' && <QRCodeDisplay amount={total} />}
+                </AnimatePresence>
 
                 {/* Delivery address summary */}
                 <motion.div

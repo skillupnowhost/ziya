@@ -16,6 +16,8 @@ export async function GET(req: NextRequest) {
     const isTrending = searchParams.get('trending');
     const isNew = searchParams.get('new');
     const isFeatured = searchParams.get('featured');
+    const priceMin = searchParams.get('priceMin');
+    const priceMax = searchParams.get('priceMax');
 
     const query: Record<string, unknown> = { isActive: true };
     if (category) query.category = category;
@@ -23,6 +25,23 @@ export async function GET(req: NextRequest) {
     if (isNew === 'true') query.isNewProduct = true;
     if (isFeatured === 'true') query.isFeatured = true;
     if (search) query.$text = { $search: search };
+
+    /* ── price range: match effective price (discountPrice when set, else price) ── */
+    if (priceMin !== null || priceMax !== null) {
+      const min = priceMin ? parseFloat(priceMin) : null;
+      const max = priceMax ? parseFloat(priceMax) : null;
+      const build = (field: string) => {
+        const c: Record<string, number> = {};
+        if (min !== null) c.$gte = min;
+        if (max !== null) c.$lte = max;
+        return { [field]: c };
+      };
+      /* match if discountPrice is in range OR (no discountPrice AND price is in range) */
+      query.$or = [
+        { discountPrice: { ...(min !== null ? { $gte: min } : {}), ...(max !== null ? { $lte: max } : {}), $exists: true, $gt: 0 } },
+        { ...build('price'), $or: [{ discountPrice: { $exists: false } }, { discountPrice: null }, { discountPrice: 0 }] },
+      ];
+    }
 
     const skip = (page - 1) * limit;
     const sortObj: Record<string, 1 | -1> = { [sort]: order === 'asc' ? 1 : -1 };

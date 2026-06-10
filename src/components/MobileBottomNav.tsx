@@ -1,14 +1,22 @@
 'use client';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { HeartIcon, ShoppingBagIcon, UserIcon } from '@heroicons/react/24/outline';
-import { HeartIcon as HeartSolid, ShoppingBagIcon as BagSolid, UserIcon as UserSolid } from '@heroicons/react/24/solid';
+import { HomeIcon, HeartIcon, ShoppingBagIcon, UserIcon } from '@heroicons/react/24/outline';
+import { HomeIcon as HomeSolid, HeartIcon as HeartSolid, ShoppingBagIcon as BagSolid, UserIcon as UserSolid } from '@heroicons/react/24/solid';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useCart } from '@/context/CartContext';
 import { useWishlist } from '@/context/WishlistContext';
 import { useAuth } from '@/context/AuthContext';
 
 const tabs = [
+  {
+    label: 'Home',
+    href: '/',
+    match: (p: string) => p === '/',
+    Icon: HomeIcon,
+    ActiveIcon: HomeSolid,
+    activeColor: 'text-rose-500',
+  },
   {
     label: 'Favourites',
     href: '/profile?tab=favourites',
