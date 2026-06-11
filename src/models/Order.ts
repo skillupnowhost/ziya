@@ -24,7 +24,7 @@ export interface IOrder extends Document {
   userId: mongoose.Types.ObjectId;
   items: IOrderItem[];
   shippingAddress: IShippingAddress;
-  paymentMethod: 'razorpay' | 'upi' | 'cod';
+  paymentMethod: 'razorpay' | 'upi' | 'cod' | 'manual';
   paymentStatus: 'pending' | 'paid' | 'failed' | 'refunded';
   paymentId?: string;
   razorpayOrderId?: string;
@@ -71,7 +71,7 @@ const OrderSchema = new Schema<IOrder>(
     userId:          { type: Schema.Types.ObjectId, ref: 'User', required: true },
     items:           { type: [OrderItemSchema], required: true },
     shippingAddress: { type: ShippingAddressSchema, required: true },
-    paymentMethod:   { type: String, required: true, enum: ['razorpay', 'upi', 'cod'] },
+    paymentMethod:   { type: String, required: true, enum: ['razorpay', 'upi', 'cod', 'manual'] },
     paymentStatus:   { type: String, enum: ['pending', 'paid', 'failed', 'refunded'], default: 'pending' },
     paymentId:       { type: String },
     razorpayOrderId: { type: String },

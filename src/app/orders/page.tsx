@@ -110,7 +110,7 @@ export default function OrdersPage() {
                 </div>
 
                 <p className="text-xs text-gray-400">
-                  {order.items.reduce((s, i) => s + i.quantity, 0)} item{order.items.length > 1 ? 's' : ''} ·{' '}
+                  {(() => { const c = order.items.reduce((s, i) => s + i.quantity, 0); return `${c} item${c !== 1 ? 's' : ''}`; })()} ·{' '}
                   {order.items.map(i => i.name).join(', ').slice(0, 60)}
                   {order.items.map(i => i.name).join(', ').length > 60 ? '...' : ''}
                 </p>

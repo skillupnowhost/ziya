@@ -4,7 +4,7 @@ import { useParams } from 'next/navigation';
 import axios from 'axios';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { ChatBubbleLeftEllipsisIcon, MapPinIcon, CreditCardIcon, CheckIcon } from '@heroicons/react/24/outline';
+import { ChatBubbleLeftEllipsisIcon, MapPinIcon, CreditCardIcon, CheckIcon, PencilSquareIcon, XMarkIcon } from '@heroicons/react/24/outline';
 
 const STATUS_STEPS = ['pending', 'confirmed', 'processing', 'shipped', 'delivered'];
 const STATUS_COLORS: Record<string, string> = {
@@ -46,6 +46,10 @@ export default function OrderDetailPage() {
   const { id } = useParams<{ id: string }>();
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
+  const [editingAddress, setEditingAddress] = useState(false);
+  const [addressForm, setAddressForm] = useState({ name: '', phone: '', street: '', city: '', state: '', pincode: '' });
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState('');
 
   useEffect(() => {
     axios.get(`/api/orders/${id}`)
@@ -53,6 +57,40 @@ export default function OrderDetailPage() {
       .catch(console.error)
       .finally(() => setLoading(false));
   }, [id]);
+
+  const canEdit = order
+    ? order.paymentStatus !== 'paid' && !['shipped', 'delivered', 'cancelled'].includes(order.status)
+    : false;
+
+  function openEdit() {
+    if (!order) return;
+    setAddressForm({
+      name:    order.shippingAddress.name    ?? '',
+      phone:   order.shippingAddress.phone   ?? '',
+      street:  order.shippingAddress.street  ?? '',
+      city:    order.shippingAddress.city    ?? '',
+      state:   order.shippingAddress.state   ?? '',
+      pincode: order.shippingAddress.pincode ?? '',
+    });
+    setSaveError('');
+    setEditingAddress(true);
+  }
+
+  async function saveAddress() {
+    if (!order) return;
+    setSaving(true);
+    setSaveError('');
+    try {
+      const res = await axios.patch(`/api/orders/${id}`, { shippingAddress: addressForm });
+      setOrder(res.data.order);
+      setEditingAddress(false);
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error;
+      setSaveError(msg || 'Failed to update address. Please try again.');
+    } finally {
+      setSaving(false);
+    }
+  }
 
   if (loading) return (
     <div className="max-w-4xl mx-auto px-4 py-8 space-y-4">
@@ -281,6 +319,16 @@ export default function OrderDetailPage() {
             <div className="flex items-center gap-2 mb-3">
               <MapPinIcon className="w-4 h-4 text-rose-400" />
               <h3 className="font-semibold text-gray-800 text-sm">Shipping Address</h3>
+              {canEdit && (
+                <button
+                  type="button"
+                  onClick={openEdit}
+                  className="ml-auto flex items-center gap-1 text-xs text-rose-400 hover:text-rose-500 font-medium transition-colors"
+                >
+                  <PencilSquareIcon className="w-3.5 h-3.5" />
+                  Edit
+                </button>
+              )}
             </div>
             <div className="text-sm text-gray-600 space-y-0.5">
               <p className="font-medium text-gray-800">{order.shippingAddress.name}</p>
@@ -288,6 +336,11 @@ export default function OrderDetailPage() {
               <p>{order.shippingAddress.street}</p>
               <p>{order.shippingAddress.city}, {order.shippingAddress.state} {order.shippingAddress.pincode}</p>
             </div>
+            {canEdit && (
+              <p className="mt-3 text-xs text-amber-600 bg-amber-50 rounded-lg px-2.5 py-1.5 leading-snug">
+                You can update your address until payment is confirmed.
+              </p>
+            )}
           </motion.div>
 
           <motion.div
@@ -315,6 +368,12 @@ export default function OrderDetailPage() {
                   {order.paymentStatus}
                 </motion.span>
               </div>
+              {order.trackingNumber && (
+                <div className="flex justify-between pt-1 border-t border-gray-100">
+                  <span className="text-gray-600">Tracking #</span>
+                  <span className="font-medium text-indigo-600 break-all text-right max-w-[120px]">{order.trackingNumber}</span>
+                </div>
+              )}
             </div>
           </motion.div>
 
@@ -327,6 +386,74 @@ export default function OrderDetailPage() {
           </motion.p>
         </motion.div>
       </div>
+
+      {/* Edit address modal */}
+      {editingAddress && (
+        <motion.div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          onClick={(e) => { if (e.target === e.currentTarget) setEditingAddress(false); }}
+        >
+          <motion.div
+            className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6"
+            initial={{ opacity: 0, scale: 0.95, y: 12 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+          >
+            <div className="flex items-center justify-between mb-5">
+              <h2 className="text-base font-bold text-gray-900">Update Shipping Address</h2>
+              <button type="button" onClick={() => setEditingAddress(false)} className="text-gray-400 hover:text-gray-600 transition-colors">
+                <XMarkIcon className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-3">
+              {([
+                { key: 'name',    label: 'Full Name',    placeholder: 'Recipient name' },
+                { key: 'phone',   label: 'Phone Number', placeholder: '10-digit mobile number' },
+                { key: 'street',  label: 'Street / Area',placeholder: 'House no, street, locality' },
+                { key: 'city',    label: 'City',         placeholder: 'City' },
+                { key: 'state',   label: 'State',        placeholder: 'State' },
+                { key: 'pincode', label: 'Pincode',      placeholder: '6-digit pincode' },
+              ] as { key: keyof typeof addressForm; label: string; placeholder: string }[]).map(({ key, label, placeholder }) => (
+                <div key={key}>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">{label}</label>
+                  <input
+                    type="text"
+                    value={addressForm[key]}
+                    onChange={(e) => setAddressForm((f) => ({ ...f, [key]: e.target.value }))}
+                    placeholder={placeholder}
+                    className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-rose-300 transition"
+                  />
+                </div>
+              ))}
+            </div>
+
+            {saveError && (
+              <p className="mt-3 text-xs text-red-500 bg-red-50 rounded-lg px-3 py-2">{saveError}</p>
+            )}
+
+            <div className="flex gap-2 mt-5">
+              <button
+                type="button"
+                onClick={() => setEditingAddress(false)}
+                className="flex-1 py-2.5 rounded-xl border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={saveAddress}
+                disabled={saving}
+                className="flex-1 py-2.5 rounded-xl bg-rose-400 hover:bg-rose-500 disabled:opacity-60 text-white text-sm font-semibold transition-colors"
+              >
+                {saving ? 'Saving…' : 'Save Address'}
+              </button>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
     </motion.div>
   );
 }

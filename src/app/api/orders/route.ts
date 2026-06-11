@@ -134,10 +134,10 @@ export async function POST(req: NextRequest) {
       discount,
       total,
       status: paymentMethod === 'cod' ? 'confirmed' : 'pending',
-      paymentStatus: paymentMethod === 'cod' ? 'pending' : 'pending',
+      paymentStatus: 'pending',
     });
 
-    // Deduct stock for COD orders
+    // Deduct stock immediately for COD only; manual orders wait until admin marks as paid
     if (paymentMethod === 'cod') {
       for (const item of items) {
         await Product.findByIdAndUpdate(item.productId, { $inc: { stock: -item.quantity } });
