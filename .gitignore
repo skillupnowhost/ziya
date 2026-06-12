@@ -43,3 +43,6 @@ next-env.d.ts
 
 # local assets / binaries
 /src/Logo/
+
+# OpenNext / Cloudflare build output
+/.open-next/
