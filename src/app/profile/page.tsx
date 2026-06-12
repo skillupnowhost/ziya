@@ -20,6 +20,7 @@ import {
   ChevronRightIcon,
   StarIcon,
   CameraIcon,
+  Cog6ToothIcon,
 } from '@heroicons/react/24/outline';
 import { HeartIcon as HeartSolid, CheckBadgeIcon, SparklesIcon } from '@heroicons/react/24/solid';
 import ConfirmDialog from '@/components/ConfirmDialog';
@@ -37,7 +38,7 @@ interface Address {
 type Tab = 'profile' | 'addresses' | 'favourites';
 
 function ProfileContent() {
-  const { user, loading: authLoading, updateUser } = useAuth();
+  const { user, loading: authLoading, updateUser, isAdmin } = useAuth();
   const { items: wishlistItems, remove: removeWishlist } = useWishlist();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -46,6 +47,11 @@ function ProfileContent() {
   const avatarInputRef = useRef<HTMLInputElement>(null);
   const initialTab = (searchParams.get('tab') as Tab) || 'profile';
   const [activeTab, setActiveTab] = useState<Tab>(initialTab);
+
+  useEffect(() => {
+    const tab = (searchParams.get('tab') as Tab) || 'profile';
+    setActiveTab(tab);
+  }, [searchParams]);
   const [form, setForm] = useState({ name: '', phone: '' });
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [newAddress, setNewAddress] = useState<Address>({
@@ -478,6 +484,13 @@ function ProfileContent() {
                     color: 'from-rose-50 to-orange-50',
                     action: () => router.push('/orders'),
                   },
+                  ...(isAdmin ? [{
+                    label: 'Admin Panel',
+                    desc: 'Manage store',
+                    icon: <Cog6ToothIcon className="w-5 h-5 text-violet-500" />,
+                    color: 'from-violet-50 to-purple-50',
+                    action: () => router.push('/admin'),
+                  }] : []),
                 ].map((item, i, arr) => (
                   <button
                     key={item.label}

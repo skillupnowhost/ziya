@@ -1,6 +1,6 @@
 'use client';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useSearchParams } from 'next/navigation';
 import { HomeIcon, HeartIcon, ShoppingBagIcon, UserIcon } from '@heroicons/react/24/outline';
 import { HomeIcon as HomeSolid, HeartIcon as HeartSolid, ShoppingBagIcon as BagSolid, UserIcon as UserSolid } from '@heroicons/react/24/solid';
 import { motion, AnimatePresence, type Transition, type TargetAndTransition } from 'framer-motion';
@@ -80,7 +80,8 @@ const tabs = [
 
 export default function MobileBottomNav() {
   const pathname = usePathname();
-  const search = typeof window !== 'undefined' ? window.location.search : '';
+  const searchParams = useSearchParams();
+  const search = searchParams.toString();
   const { itemCount } = useCart();
   const { count: wishlistCount } = useWishlist();
   const { user } = useAuth();

@@ -28,16 +28,17 @@ const STATUS_COLORS: Record<string, string> = {
 export default function OrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
+    if (authLoading) return;
     if (!user) { router.push('/auth/login'); return; }
     axios.get('/api/orders')
       .then((r) => setOrders(r.data.orders || []))
       .catch(console.error)
       .finally(() => setLoading(false));
-  }, [user, router]);
+  }, [user, authLoading, router]);
 
   if (loading) return (
     <div className="max-w-5xl mx-auto px-4 sm:px-6 md:px-8 py-8 space-y-4">

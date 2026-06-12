@@ -140,7 +140,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               </Suspense>
               <MainWrapper>{children}</MainWrapper>
               <Footer />
-              <MobileBottomNav />
+              <Suspense fallback={null}>
+                <MobileBottomNav />
+              </Suspense>
               <Toaster
                 position="bottom-right"
                 toastOptions={{
