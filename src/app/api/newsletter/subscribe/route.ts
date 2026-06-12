@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { connectDB } from '@/lib/mongodb';
-import NewsletterCoupon from '@/models/NewsletterCoupon';
-import CouponLog from '@/models/CouponLog';
+import { supabase } from '@/lib/supabase';
 
 function generateCouponCode(): string {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -28,23 +26,27 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Valid email is required' }, { status: 400 });
     }
 
-    await connectDB();
     const ipAddress = getClientIp(req);
-    const normalizedEmail = email.toLowerCase().trim();
+    const normalizedEmail = (email as string).toLowerCase().trim();
 
     // Check if this email already claimed a coupon
-    const existing = await NewsletterCoupon.findOne({ email: normalizedEmail });
+    const { data: existing } = await supabase
+      .from('newsletter_coupons')
+      .select('coupon_code')
+      .eq('email', normalizedEmail)
+      .maybeSingle();
+
     if (existing) {
-      await CouponLog.create({
-        email: normalizedEmail,
-        couponCode: existing.couponCode,
-        action: 'duplicate_email_attempt',
-        reason: 'Email already subscribed',
-        ipAddress,
+      await supabase.from('coupon_logs').insert({
+        email:       normalizedEmail,
+        coupon_code: existing.coupon_code,
+        action:      'duplicate_email_attempt',
+        reason:      'Email already subscribed',
+        ip_address:  ipAddress,
       });
       return NextResponse.json({
         alreadyClaimed: true,
-        couponCode: existing.couponCode,
+        couponCode: existing.coupon_code,
         message: 'You already have a coupon! Check your earlier subscription.',
       });
     }
@@ -52,20 +54,32 @@ export async function POST(req: NextRequest) {
     // Generate a unique coupon code
     let couponCode = generateCouponCode();
     let attempts = 0;
-    while (await NewsletterCoupon.findOne({ couponCode }) && attempts < 10) {
+    while (attempts < 10) {
+      const { data: clash } = await supabase
+        .from('newsletter_coupons')
+        .select('id')
+        .eq('coupon_code', couponCode)
+        .maybeSingle();
+      if (!clash) break;
       couponCode = generateCouponCode();
       attempts++;
     }
 
-    await NewsletterCoupon.create({ email: normalizedEmail, couponCode, ipAddress });
+    const { error } = await supabase
+      .from('newsletter_coupons')
+      .insert({ email: normalizedEmail, coupon_code: couponCode, ip_address: ipAddress });
 
-    // Log the claim — isAdminRead: false triggers admin notification
-    await CouponLog.create({
-      email: normalizedEmail,
-      couponCode,
-      action: 'claimed',
-      reason: 'Newsletter subscription',
-      ipAddress,
+    if (error) {
+      console.error('Newsletter subscribe error:', error);
+      return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    }
+
+    await supabase.from('coupon_logs').insert({
+      email:       normalizedEmail,
+      coupon_code: couponCode,
+      action:      'claimed',
+      reason:      'Newsletter subscription',
+      ip_address:  ipAddress,
     });
 
     return NextResponse.json({

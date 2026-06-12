@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { connectDB } from '@/lib/mongodb';
-import CouponLog from '@/models/CouponLog';
+import { supabase, mapRows } from '@/lib/supabase';
 import { getUserFromRequest } from '@/lib/auth';
 
 export async function GET(req: NextRequest) {
@@ -10,30 +9,36 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    await connectDB();
     const { searchParams } = new URL(req.url);
-    const page = parseInt(searchParams.get('page') || '1');
-    const limit = parseInt(searchParams.get('limit') || '20');
+    const page   = parseInt(searchParams.get('page')  || '1');
+    const limit  = parseInt(searchParams.get('limit') || '20');
     const action = searchParams.get('action') || '';
-    const skip = (page - 1) * limit;
+    const skip   = (page - 1) * limit;
 
-    const query: Record<string, unknown> = {};
-    if (action) query.action = action;
+    let query = supabase
+      .from('coupon_logs')
+      .select('*', { count: 'exact' })
+      .order('created_at', { ascending: false });
 
-    const [logs, total, unreadCount] = await Promise.all([
-      CouponLog.find(query)
-        .sort({ createdAt: -1 })
-        .skip(skip)
-        .limit(limit)
-        .lean(),
-      CouponLog.countDocuments(query),
-      CouponLog.countDocuments({ isAdminRead: false }),
-    ]);
+    if (action) query = query.eq('action', action);
 
+    const { data: rows, count, error } = await query.range(skip, skip + limit - 1);
+
+    if (error) {
+      console.error('Coupon logs error:', error);
+      return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    }
+
+    const { count: unreadCount } = await supabase
+      .from('coupon_logs')
+      .select('id', { count: 'exact', head: true })
+      .eq('is_admin_read', false);
+
+    const total = count ?? 0;
     return NextResponse.json({
-      logs,
-      unreadCount,
-      pagination: { page, limit, total, pages: Math.ceil(total / limit) },
+      logs:        mapRows(rows ?? []),
+      unreadCount: unreadCount ?? 0,
+      pagination:  { page, limit, total, pages: Math.ceil(total / limit) },
     });
   } catch (error) {
     console.error('Coupon logs error:', error);
@@ -49,8 +54,16 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    await connectDB();
-    await CouponLog.updateMany({ isAdminRead: false }, { isAdminRead: true });
+    const { error } = await supabase
+      .from('coupon_logs')
+      .update({ is_admin_read: true })
+      .eq('is_admin_read', false);
+
+    if (error) {
+      console.error('Mark logs read error:', error);
+      return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    }
+
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Mark logs read error:', error);

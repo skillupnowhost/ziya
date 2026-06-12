@@ -12,6 +12,7 @@ import MobileBottomNav from "@/components/MobileBottomNav";
 import { Toaster } from "react-hot-toast";
 
 export const metadata: Metadata = {
+  metadataBase: new URL('https://ziya.in'),
   title: {
     default: "Ziya - the Fashion Closet | Korean Fashion & Accessories",
     template: "%s | Ziya - the Fashion Closet",
@@ -27,7 +28,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className="h-full">
+    <html lang="en" className="h-full" data-scroll-behavior="smooth">
       <body className="min-h-full flex flex-col antialiased">
         <AuthProvider>
           <CartProvider>

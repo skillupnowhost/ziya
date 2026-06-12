@@ -16,6 +16,7 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<void>;
   register: (name: string, email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
+  updateUser: (updates: Partial<User>) => void;
   loading: boolean;
   isAdmin: boolean;
 }
@@ -70,8 +71,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     delete axios.defaults.headers.common['Authorization'];
   }, []);
 
+  const updateUser = useCallback((updates: Partial<User>) => {
+    setUser((prev) => prev ? { ...prev, ...updates } : prev);
+  }, []);
+
   return (
-    <AuthContext.Provider value={{ user, token, login, register, logout, loading, isAdmin: user?.role === 'admin' }}>
+    <AuthContext.Provider value={{ user, token, login, register, logout, updateUser, loading, isAdmin: user?.role === 'admin' }}>
       {children}
     </AuthContext.Provider>
   );

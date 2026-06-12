@@ -1,6 +1,5 @@
 import { NextRequest } from 'next/server';
-import { connectDB } from '@/lib/mongodb';
-import Product from '@/models/Product';
+import { supabase } from '@/lib/supabase';
 
 export const dynamic = 'force-dynamic';
 
@@ -9,7 +8,6 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-
   const encoder = new TextEncoder();
 
   const stream = new ReadableStream({
@@ -20,38 +18,46 @@ export async function GET(
 
       // Send initial stock
       try {
-        await connectDB();
-        const product = await Product.findById(id).select('stock').lean();
-        if (product) {
-          send({ stock: (product as { stock: number }).stock, productId: id });
+        const { data: row } = await supabase
+          .from('products')
+          .select('stock')
+          .eq('id', id)
+          .maybeSingle();
+
+        if (row) {
+          send({ stock: row.stock, productId: id });
         } else {
           send({ error: 'Product not found', productId: id });
           controller.close();
           return;
         }
-      } catch (err) {
+      } catch {
         send({ error: 'DB error', productId: id });
         controller.close();
         return;
       }
 
-      // Poll for stock changes every 15 seconds
       let lastStock: number | null = null;
+
       const interval = setInterval(async () => {
         try {
-          const product = await Product.findById(id).select('stock').lean();
-          if (!product) { clearInterval(interval); controller.close(); return; }
-          const stock = (product as { stock: number }).stock;
+          const { data: row } = await supabase
+            .from('products')
+            .select('stock')
+            .eq('id', id)
+            .maybeSingle();
+
+          if (!row) { clearInterval(interval); controller.close(); return; }
+          const stock = row.stock as number;
           if (stock !== lastStock) {
             lastStock = stock;
             send({ stock, productId: id, updated: true });
           }
         } catch {
-          // silently skip on transient DB errors
+          // silently skip transient errors
         }
       }, 15000);
 
-      // Heartbeat every 30 seconds to keep connection alive
       const heartbeat = setInterval(() => {
         try {
           controller.enqueue(encoder.encode(': heartbeat\n\n'));
@@ -61,7 +67,6 @@ export async function GET(
         }
       }, 30000);
 
-      // Clean up on client disconnect
       return () => {
         clearInterval(interval);
         clearInterval(heartbeat);

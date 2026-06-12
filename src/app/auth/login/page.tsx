@@ -561,7 +561,7 @@ function LoginContent() {
                 href={`/auth/register${redirect !== '/' ? `?redirect=${redirect}` : ''}`}
                 className="text-rose-400 font-semibold hover:text-rose-500 transition-colors"
               >
-                Create one free →
+                Create a New Account →
               </Link>
             </p>
             <motion.div

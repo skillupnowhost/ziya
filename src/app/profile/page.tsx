@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useWishlist } from '@/context/WishlistContext';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -19,11 +19,15 @@ import {
   ShoppingBagIcon,
   ChevronRightIcon,
   StarIcon,
+  CameraIcon,
 } from '@heroicons/react/24/outline';
 import { HeartIcon as HeartSolid, CheckBadgeIcon, SparklesIcon } from '@heroicons/react/24/solid';
+import ConfirmDialog from '@/components/ConfirmDialog';
 
 interface Address {
-  street: string;
+  doorNumber: string;
+  streetName: string;
+  landmark: string;
   city: string;
   state: string;
   pincode: string;
@@ -33,19 +37,23 @@ interface Address {
 type Tab = 'profile' | 'addresses' | 'favourites';
 
 export default function ProfilePage() {
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, updateUser } = useAuth();
   const { items: wishlistItems, remove: removeWishlist } = useWishlist();
   const router = useRouter();
   const searchParams = useSearchParams();
   const [saving, setSaving] = useState(false);
+  const [avatarUploading, setAvatarUploading] = useState(false);
+  const avatarInputRef = useRef<HTMLInputElement>(null);
   const initialTab = (searchParams.get('tab') as Tab) || 'profile';
   const [activeTab, setActiveTab] = useState<Tab>(initialTab);
   const [form, setForm] = useState({ name: '', phone: '' });
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [newAddress, setNewAddress] = useState<Address>({
-    street: '', city: '', state: '', pincode: '', country: 'India',
+    doorNumber: '', streetName: '', landmark: '', city: '', state: '', pincode: '', country: 'India',
   });
+  const [activeSuggestionField, setActiveSuggestionField] = useState<keyof Address | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
+  const [removeAddrIdx, setRemoveAddrIdx] = useState<number | null>(null);
 
   useEffect(() => {
     if (!authLoading && !user) router.push('/auth/login');
@@ -71,15 +79,15 @@ export default function ProfilePage() {
   };
 
   const addAddress = async () => {
-    if (!newAddress.street || !newAddress.city || !newAddress.state || !newAddress.pincode) {
-      toast.error('Please fill all address fields');
+    if (!newAddress.doorNumber || !newAddress.streetName || !newAddress.city || !newAddress.state || !newAddress.pincode) {
+      toast.error('Please fill all required address fields');
       return;
     }
     const updated = [...addresses, newAddress];
     try {
       await axios.put('/api/auth/me', { addresses: updated });
       setAddresses(updated);
-      setNewAddress({ street: '', city: '', state: '', pincode: '', country: 'India' });
+      setNewAddress({ doorNumber: '', streetName: '', landmark: '', city: '', state: '', pincode: '', country: 'India' });
       setShowAddForm(false);
       toast.success('Address added!');
     } catch {
@@ -95,6 +103,41 @@ export default function ProfilePage() {
       toast.success('Address removed');
     } catch {
       toast.error('Failed to remove address');
+    }
+  };
+
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) { toast.error('Image too large. Max 5MB.'); return; }
+    setAvatarUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append('avatar', file);
+      const res = await axios.post('/api/auth/avatar', fd, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      updateUser({ avatar: res.data.user.avatar });
+      toast.success('Profile photo updated!');
+    } catch {
+      toast.error('Failed to upload photo');
+    } finally {
+      setAvatarUploading(false);
+      if (avatarInputRef.current) avatarInputRef.current.value = '';
+    }
+  };
+
+  const handleAvatarDelete = async () => {
+    if (!user?.avatar) return;
+    setAvatarUploading(true);
+    try {
+      await axios.delete('/api/auth/avatar');
+      updateUser({ avatar: undefined });
+      toast.success('Profile photo removed');
+    } catch {
+      toast.error('Failed to remove photo');
+    } finally {
+      setAvatarUploading(false);
     }
   };
 
@@ -142,19 +185,75 @@ export default function ProfilePage() {
           <div className="flex flex-col sm:flex-row items-center sm:items-end gap-6">
 
             {/* Avatar stack */}
-            <div className="relative shrink-0 flex items-center justify-center">
-              {/* Pulsing ring (opacity+scale only — GPU composited) */}
+            <div className="relative shrink-0 flex items-center justify-center group/avatar">
+              {/* Pulsing ring */}
               <span className="absolute inset-0 rounded-full avatar-ring bg-rose-400/40" />
               <div className="relative w-24 h-24 sm:w-28 sm:h-28 rounded-full ring-4 ring-white/20 shadow-2xl overflow-hidden bg-gradient-to-br from-rose-300 to-pink-500 flex items-center justify-center">
-                {user?.avatar
-                  ? <img src={user.avatar} alt={user?.name} className="w-full h-full object-cover" />
-                  : <span className="text-3xl font-black text-white select-none">{initials}</span>
-                }
+                {avatarUploading ? (
+                  <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                    <svg className="animate-spin w-7 h-7 text-white" viewBox="0 0 24 24" fill="none">
+                      <circle className="opacity-30" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" />
+                      <path className="opacity-80" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                    </svg>
+                  </div>
+                ) : (
+                  <>
+                    {user?.avatar
+                      ? <img src={user.avatar} alt={user?.name} className="w-full h-full object-cover" />
+                      : <span className="text-3xl font-black text-white select-none">{initials}</span>
+                    }
+                    {/* Hover overlay — camera icon */}
+                    <button
+                      type="button"
+                      onClick={() => avatarInputRef.current?.click()}
+                      className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover/avatar:opacity-100 transition-opacity cursor-pointer rounded-full"
+                      title="Change photo"
+                    >
+                      <CameraIcon className="w-7 h-7 text-white drop-shadow" />
+                    </button>
+                  </>
+                )}
               </div>
+
+              {/* Hidden file input */}
+              <input
+                ref={avatarInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                title="Upload profile photo"
+                aria-label="Upload profile photo"
+                onChange={handleAvatarChange}
+              />
+
               {/* Verified badge */}
               <div className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-emerald-400 border-2 border-white shadow-lg flex items-center justify-center">
                 <CheckBadgeIcon className="w-4 h-4 text-white" />
               </div>
+            </div>
+
+            {/* Avatar action buttons (visible below avatar on mobile, or as small pills) */}
+            <div className="flex gap-2 mt-1 sm:hidden">
+              <button
+                type="button"
+                onClick={() => avatarInputRef.current?.click()}
+                disabled={avatarUploading}
+                className="flex items-center gap-1 px-3 py-1 text-xs font-bold bg-white/15 hover:bg-white/25 text-white rounded-full transition-all disabled:opacity-50"
+              >
+                <CameraIcon className="w-3.5 h-3.5" />
+                {user?.avatar ? 'Change' : 'Add Photo'}
+              </button>
+              {user?.avatar && (
+                <button
+                  type="button"
+                  onClick={handleAvatarDelete}
+                  disabled={avatarUploading}
+                  className="flex items-center gap-1 px-3 py-1 text-xs font-bold bg-red-500/20 hover:bg-red-500/35 text-white rounded-full transition-all disabled:opacity-50"
+                >
+                  <TrashIcon className="w-3.5 h-3.5" />
+                  Remove
+                </button>
+              )}
             </div>
 
             {/* Name block */}
@@ -255,9 +354,31 @@ export default function ProfilePage() {
                 <div className="w-9 h-9 rounded-2xl bg-gradient-to-br from-rose-400 to-pink-500 flex items-center justify-center shadow-md shadow-rose-200">
                   <UserIcon className="w-4.5 h-4.5 text-white" style={{ width: '1.125rem', height: '1.125rem' }} />
                 </div>
-                <div>
+                <div className="flex-1">
                   <h2 className="text-base font-black text-gray-900 leading-none">Personal Info</h2>
                   <p className="text-[11px] text-gray-400 mt-0.5">Update your details below</p>
+                </div>
+                {/* Desktop photo buttons */}
+                <div className="hidden sm:flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => avatarInputRef.current?.click()}
+                    disabled={avatarUploading}
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold bg-rose-50 hover:bg-rose-100 text-rose-500 rounded-xl transition-all disabled:opacity-50"
+                  >
+                    <CameraIcon className="w-3.5 h-3.5" />
+                    {avatarUploading ? 'Uploading…' : user?.avatar ? 'Change Photo' : 'Add Photo'}
+                  </button>
+                  {user?.avatar && !avatarUploading && (
+                    <button
+                      type="button"
+                      onClick={handleAvatarDelete}
+                      className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold bg-red-50 hover:bg-red-100 text-red-400 rounded-xl transition-all"
+                    >
+                      <TrashIcon className="w-3.5 h-3.5" />
+                      Remove
+                    </button>
+                  )}
                 </div>
               </div>
 
@@ -288,7 +409,7 @@ export default function ProfilePage() {
                     <EnvelopeIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300" />
                     <input
                       type="email"
-                      value={user?.email}
+                      value={user?.email || ''}
                       disabled
                       title="Email address"
                       placeholder="your@email.com"
@@ -429,7 +550,8 @@ export default function ProfilePage() {
                       <MapPinIcon className="w-5 h-5 text-rose-400" />
                     </div>
                     <div className="min-w-0">
-                      <p className="font-black text-gray-900 text-sm truncate">{addr.street}</p>
+                      <p className="font-black text-gray-900 text-sm truncate">{addr.doorNumber}{addr.streetName ? `, ${addr.streetName}` : ''}</p>
+                      {addr.landmark && <p className="text-xs text-gray-400 mt-0.5 truncate">Near {addr.landmark}</p>}
                       <p className="text-sm text-gray-500 mt-0.5">{addr.city}, {addr.state} — {addr.pincode}</p>
                       <span className="inline-block mt-1.5 text-[10px] font-bold bg-gray-100 text-gray-500 px-2.5 py-0.5 rounded-full uppercase tracking-wider">
                         {addr.country}
@@ -438,7 +560,7 @@ export default function ProfilePage() {
                   </div>
                   <button
                     type="button"
-                    onClick={() => removeAddress(i)}
+                    onClick={() => setRemoveAddrIdx(i)}
                     aria-label="Remove address"
                     title="Remove address"
                     className="p-2.5 rounded-2xl text-gray-300 hover:text-red-400 hover:bg-red-50 transition-all shrink-0"
@@ -460,22 +582,50 @@ export default function ProfilePage() {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {([
-                    { key: 'street',  label: 'Street Address', placeholder: 'House / Flat, Street, Area', full: true },
-                    { key: 'city',    label: 'City',           placeholder: 'City' },
-                    { key: 'state',   label: 'State',          placeholder: 'State' },
-                    { key: 'pincode', label: 'PIN Code',       placeholder: '6-digit PIN' },
-                  ] as { key: keyof Address; label: string; placeholder: string; full?: boolean }[]).map((f) => (
-                    <div key={f.key} className={f.full ? 'sm:col-span-2' : ''}>
-                      <label className="block text-[11px] font-black uppercase tracking-[0.12em] text-gray-400 mb-2">{f.label}</label>
+                    { key: 'doorNumber',  label: 'Door / Flat Number',  placeholder: 'e.g. 12B, Flat 3', full: false, required: true },
+                    { key: 'streetName',  label: 'Street Name',         placeholder: 'Street or area name', full: false, required: true },
+                    { key: 'landmark',    label: 'Landmark (optional)',  placeholder: 'Near park, school…', full: true,  required: false },
+                    { key: 'city',        label: 'City',                 placeholder: 'City',               full: false, required: true },
+                    { key: 'state',       label: 'State',                placeholder: 'State',              full: false, required: true },
+                    { key: 'pincode',     label: 'PIN Code',             placeholder: '6-digit PIN',        full: false, required: true },
+                  ] as { key: keyof Address; label: string; placeholder: string; full?: boolean; required: boolean }[]).map((f) => {
+                    const suggestions = Array.from(new Set(
+                      addresses.map((a) => a[f.key]).filter(Boolean)
+                    )) as string[];
+                    const fieldVal = newAddress[f.key];
+                    const filtered = suggestions.filter(
+                      (s) => s.toLowerCase().includes(fieldVal.toLowerCase()) && s !== fieldVal
+                    );
+                    return (
+                    <div key={f.key} className={`relative ${f.full ? 'sm:col-span-2' : ''}`}>
+                      <label className="block text-[11px] font-black uppercase tracking-[0.12em] text-gray-400 mb-2">
+                        {f.label}{f.required && <span className="text-rose-400 ml-0.5">*</span>}
+                      </label>
                       <input
                         type="text"
                         value={newAddress[f.key]}
                         onChange={(e) => setNewAddress({ ...newAddress, [f.key]: e.target.value })}
+                        onFocus={() => setActiveSuggestionField(f.key)}
+                        onBlur={() => setTimeout(() => setActiveSuggestionField(null), 150)}
                         placeholder={f.placeholder}
                         className="w-full px-4 py-3.5 bg-gray-50 border-2 border-transparent rounded-2xl text-sm font-semibold text-gray-800 placeholder-gray-300 focus:outline-none focus:bg-white focus:border-rose-300 transition-all"
                       />
+                      {activeSuggestionField === f.key && filtered.length > 0 && (
+                        <ul className="absolute z-20 left-0 right-0 mt-1 bg-white border border-rose-100 rounded-2xl shadow-lg overflow-hidden">
+                          {filtered.slice(0, 4).map((s) => (
+                            <li
+                              key={s}
+                              onMouseDown={() => setNewAddress({ ...newAddress, [f.key]: s })}
+                              className="px-4 py-2.5 text-sm text-gray-700 hover:bg-rose-50 hover:text-rose-600 cursor-pointer transition-colors"
+                            >
+                              {s}
+                            </li>
+                          ))}
+                        </ul>
+                      )}
                     </div>
-                  ))}
+                    );
+                  })}
                 </div>
 
                 <div className="flex flex-col sm:flex-row gap-3 pt-1">
@@ -648,6 +798,16 @@ export default function ProfilePage() {
         )}
         </AnimatePresence>
       </div>
+    <ConfirmDialog
+      open={removeAddrIdx !== null}
+      type="danger"
+      title="Remove address?"
+      message="This address will be permanently removed from your saved list."
+      confirmLabel="Remove"
+      cancelLabel="Keep it"
+      onConfirm={() => { if (removeAddrIdx !== null) removeAddress(removeAddrIdx); setRemoveAddrIdx(null); }}
+      onCancel={() => setRemoveAddrIdx(null)}
+    />
     </div>
   );
 }

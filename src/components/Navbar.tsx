@@ -20,6 +20,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { useWishlist } from '@/context/WishlistContext';
 import { motion, AnimatePresence } from 'framer-motion';
+import ConfirmDialog from '@/components/ConfirmDialog';
 
 const navLinks = [
   { label: 'Home', href: '/' },
@@ -33,6 +34,7 @@ export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [cartBounce, setCartBounce] = useState(false);
+  const [showSignOutDialog, setShowSignOutDialog] = useState(false);
   const { searchOpen, setSearchOpen } = useNavbar();
   const searchInputRef = useRef<HTMLInputElement>(null);
   const pathname = usePathname();
@@ -85,6 +87,7 @@ export default function Navbar() {
   if (pathname.startsWith('/admin')) return null;
 
   return (
+    <>
     <header
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
         scrolled ? 'bg-white/96 backdrop-blur-md shadow-md' : 'bg-white shadow-sm'
@@ -276,7 +279,7 @@ export default function Navbar() {
                   <div className="border-t border-gray-100 mt-1 pt-1">
                     <button
                       type="button"
-                      onClick={logout}
+                      onClick={() => setShowSignOutDialog(true)}
                       className="flex items-center gap-2.5 w-full px-4 py-2 text-sm text-gray-500 hover:bg-red-50 hover:text-red-400 transition-colors group/item"
                     >
                       <ArrowRightStartOnRectangleIcon className="w-4 h-4 transition-transform duration-200 group-hover/item:translate-x-0.5" />
@@ -443,7 +446,7 @@ export default function Navbar() {
                     {/* Sign out */}
                     <motion.button
                       type="button"
-                      onClick={() => { logout(); setMobileOpen(false); }}
+                      onClick={() => { setShowSignOutDialog(true); }}
                       className="flex items-center gap-2.5 w-full px-4 py-2.5 rounded-xl text-sm font-semibold text-red-400 hover:bg-red-50 transition-colors"
                       whileHover={{ x: 2 }}
                       whileTap={{ scale: 0.97 }}
@@ -469,5 +472,17 @@ export default function Navbar() {
         )}
       </AnimatePresence>
     </header>
+
+    <ConfirmDialog
+      open={showSignOutDialog}
+      type="signout"
+      title="Sign out?"
+      message="You'll need to sign in again to access your account, cart, and orders."
+      confirmLabel="Sign Out"
+      cancelLabel="Stay"
+      onConfirm={async () => { await logout(); setMobileOpen(false); setShowSignOutDialog(false); }}
+      onCancel={() => setShowSignOutDialog(false)}
+    />
+    </>
   );
 }

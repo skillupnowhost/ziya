@@ -1,14 +1,20 @@
 import { NextResponse } from 'next/server';
-import { connectDB, getConnectionState } from '@/lib/mongodb';
+import { checkDbHealth } from '@/lib/supabase';
 
 export async function GET() {
-  const start = Date.now();
   try {
-    await connectDB();
-    const latency = Date.now() - start;
+    const { ok, latency } = await checkDbHealth();
+    if (!ok) {
+      return NextResponse.json({
+        status: 'error',
+        db: 'disconnected',
+        latency: `${latency}ms`,
+        timestamp: new Date().toISOString(),
+      }, { status: 503 });
+    }
     return NextResponse.json({
       status: 'ok',
-      db: getConnectionState(),
+      db: 'connected',
       latency: `${latency}ms`,
       timestamp: new Date().toISOString(),
     });

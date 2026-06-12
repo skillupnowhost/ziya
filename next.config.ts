@@ -8,9 +8,6 @@ const nextConfig: NextConfig = {
       { protocol: 'https', hostname: 'via.placeholder.com' },
     ],
   },
-  experimental: {
-    serverActions: { bodySizeLimit: '10mb' },
-  },
 };
 
 export default nextConfig;

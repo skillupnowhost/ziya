@@ -1,10 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { connectDB } from '@/lib/mongodb';
-import Order from '@/models/Order';
-import Product from '@/models/Product';
-import NewsletterCoupon from '@/models/NewsletterCoupon';
-import CouponLog from '@/models/CouponLog';
-import PromoCode from '@/models/PromoCode';
+import { supabase, mapRow, mapRows } from '@/lib/supabase';
 import { getUserFromRequest } from '@/lib/auth';
 
 export async function GET(req: NextRequest) {
@@ -12,22 +7,30 @@ export async function GET(req: NextRequest) {
     const payload = getUserFromRequest(req);
     if (!payload) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-    await connectDB();
     const { searchParams } = new URL(req.url);
-    const page = parseInt(searchParams.get('page') || '1');
+    const page  = parseInt(searchParams.get('page')  || '1');
     const limit = parseInt(searchParams.get('limit') || '10');
-    const skip = (page - 1) * limit;
+    const skip  = (page - 1) * limit;
 
-    const query: Record<string, unknown> = {};
-    if (payload.role !== 'admin') query.userId = payload.id;
+    let query = supabase
+      .from('orders')
+      .select('*', { count: 'exact' })
+      .order('created_at', { ascending: false });
 
-    const [orders, total] = await Promise.all([
-      Order.find(query).sort({ createdAt: -1 }).skip(skip).limit(limit).lean(),
-      Order.countDocuments(query),
-    ]);
+    if (payload.role !== 'admin') {
+      query = query.eq('user_id', payload.id as string);
+    }
 
+    const { data: rows, count, error } = await query.range(skip, skip + limit - 1);
+
+    if (error) {
+      console.error('Get orders error:', error);
+      return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    }
+
+    const total = count ?? 0;
     return NextResponse.json({
-      orders,
+      orders: mapRows(rows ?? []),
       pagination: { page, limit, total, pages: Math.ceil(total / limit) },
     });
   } catch (error) {
@@ -41,7 +44,6 @@ export async function POST(req: NextRequest) {
     const payload = getUserFromRequest(req);
     if (!payload) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-    await connectDB();
     const body = await req.json();
     const { items, shippingAddress, paymentMethod, promoCode } = body;
 
@@ -50,20 +52,26 @@ export async function POST(req: NextRequest) {
     const orderItems = [];
 
     for (const item of items) {
-      const product = await Product.findById(item.productId);
+      const { data: product } = await supabase
+        .from('products')
+        .select('id, name, images, price, discount_price, stock')
+        .eq('id', item.productId)
+        .maybeSingle();
+
       if (!product) {
         return NextResponse.json({ error: `Product ${item.productId} not found` }, { status: 404 });
       }
-      if (product.stock < item.quantity) {
+      if ((product.stock as number) < item.quantity) {
         return NextResponse.json({ error: `Insufficient stock for ${product.name}` }, { status: 400 });
       }
 
-      const price = product.discountPrice || product.price;
+      const price = (product.discount_price as number) || (product.price as number);
       subtotal += price * item.quantity;
+      const images = product.images as string[];
       orderItems.push({
-        productId: product._id,
+        productId: product.id,
         name: product.name,
-        image: product.images[0] || '',
+        image: images[0] || '',
         price,
         quantity: item.quantity,
         size: item.size,
@@ -74,48 +82,63 @@ export async function POST(req: NextRequest) {
     const shippingCost = subtotal >= 999 ? 0 : 99;
     let discount = 0;
 
-    let newsletterCoupon = null;
-    let appliedPromoCode = null;
+    let newsletterCoupon: Record<string, unknown> | null = null;
+    let appliedPromoCode: Record<string, unknown> | null = null;
 
     if (promoCode) {
-      const code = promoCode.trim().toUpperCase();
+      const code = (promoCode as string).trim().toUpperCase();
 
       // Admin-created promo codes
-      const promo = await PromoCode.findOne({ code });
+      const { data: promo } = await supabase
+        .from('promo_codes')
+        .select('*')
+        .eq('code', code)
+        .maybeSingle();
+
       if (promo) {
-        if (!promo.isActive) {
+        if (!promo.is_active) {
           return NextResponse.json({ error: 'This promo code is no longer active' }, { status: 400 });
         }
-        if (promo.expiresAt && new Date() > promo.expiresAt) {
+        if (promo.expires_at && new Date() > new Date(promo.expires_at as string)) {
           return NextResponse.json({ error: 'This promo code has expired' }, { status: 400 });
         }
-        if (promo.maxUses != null && promo.usedCount >= promo.maxUses) {
+        if (promo.max_uses != null && (promo.used_count as number) >= (promo.max_uses as number)) {
           return NextResponse.json({ error: 'This promo code has reached its usage limit' }, { status: 400 });
         }
-        if (promo.minOrderValue != null && subtotal < promo.minOrderValue) {
-          return NextResponse.json({ error: `Minimum order value of ₹${promo.minOrderValue} required` }, { status: 400 });
+        if (promo.min_order_value != null && subtotal < (promo.min_order_value as number)) {
+          return NextResponse.json({ error: `Minimum order value of ₹${promo.min_order_value} required` }, { status: 400 });
         }
-        if (promo.discountType === 'percent') {
-          discount = Math.round(subtotal * promo.discountValue / 100);
-        } else if (promo.discountType === 'flat') {
-          discount = Math.min(promo.discountValue, subtotal);
-        } else if (promo.discountType === 'shipping') {
+        if (promo.discount_type === 'percent') {
+          discount = Math.round(subtotal * (promo.discount_value as number) / 100);
+        } else if (promo.discount_type === 'flat') {
+          discount = Math.min(promo.discount_value as number, subtotal);
+        } else if (promo.discount_type === 'shipping') {
           discount = shippingCost;
         }
         appliedPromoCode = promo;
       } else if (code.startsWith('ZIYA10-')) {
-        newsletterCoupon = await NewsletterCoupon.findOne({ couponCode: code });
-        if (!newsletterCoupon || newsletterCoupon.isUsed) {
+        const { data: nc } = await supabase
+          .from('newsletter_coupons')
+          .select('*')
+          .eq('coupon_code', code)
+          .maybeSingle();
+
+        if (!nc || nc.is_used) {
           return NextResponse.json({ error: 'This coupon is invalid or has already been used' }, { status: 400 });
         }
-        const priorOrders = await Order.countDocuments({
-          userId: payload.id,
-          status: { $in: ['confirmed', 'processing', 'shipped', 'delivered'] },
-        });
-        if (priorOrders > 0) {
+
+        // First-order check
+        const { count: priorOrders } = await supabase
+          .from('orders')
+          .select('id', { count: 'exact', head: true })
+          .eq('user_id', payload.id as string)
+          .in('status', ['confirmed', 'processing', 'shipped', 'delivered']);
+
+        if ((priorOrders ?? 0) > 0) {
           return NextResponse.json({ error: 'This coupon is valid on your first order only' }, { status: 400 });
         }
         discount = Math.round(subtotal * 0.1);
+        newsletterCoupon = nc;
       } else {
         return NextResponse.json({ error: 'Invalid coupon code' }, { status: 400 });
       }
@@ -123,47 +146,65 @@ export async function POST(req: NextRequest) {
 
     const total = subtotal + shippingCost - discount;
 
-    const order = await Order.create({
-      userId: payload.id,
-      items: orderItems,
-      shippingAddress,
-      paymentMethod,
-      promoCode,
-      subtotal,
-      shippingCost,
-      discount,
-      total,
-      status: paymentMethod === 'cod' ? 'confirmed' : 'pending',
-      paymentStatus: 'pending',
-    });
+    const { data: orderRow, error: orderErr } = await supabase
+      .from('orders')
+      .insert({
+        user_id:          payload.id,
+        items:            orderItems,
+        shipping_address: shippingAddress,
+        payment_method:   paymentMethod,
+        promo_code:       promoCode || null,
+        subtotal,
+        shipping_cost:    shippingCost,
+        discount,
+        total,
+        status:           paymentMethod === 'cod' ? 'confirmed' : 'pending',
+        payment_status:   'pending',
+      })
+      .select()
+      .single();
 
-    // Deduct stock immediately for COD only; manual orders wait until admin marks as paid
+    if (orderErr || !orderRow) {
+      console.error('Create order error:', orderErr);
+      return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    }
+
+    const order = mapRow(orderRow);
+
+    // Deduct stock immediately for COD only
     if (paymentMethod === 'cod') {
       for (const item of items) {
-        await Product.findByIdAndUpdate(item.productId, { $inc: { stock: -item.quantity } });
+        await supabase.rpc('decrement_product_stock', {
+          p_id: item.productId,
+          amount: item.quantity,
+        });
       }
     }
 
-    // Increment promo code usage counter
+    // Increment promo code usage
     if (appliedPromoCode) {
-      await PromoCode.findByIdAndUpdate(appliedPromoCode._id, { $inc: { usedCount: 1 } });
+      await supabase.rpc('increment_promo_used_count', { p_id: appliedPromoCode.id });
     }
 
     // Mark newsletter coupon as used
     if (newsletterCoupon) {
-      await NewsletterCoupon.findByIdAndUpdate(newsletterCoupon._id, {
-        isUsed: true,
-        usedAt: new Date(),
-        usedByUserId: payload.id,
-        usedInOrderId: order._id,
-      });
-      await CouponLog.create({
-        email: newsletterCoupon.email,
-        couponCode: newsletterCoupon.couponCode,
-        action: 'used',
-        reason: `Redeemed on order ${order._id}`,
-        userId: payload.id,
-        orderId: order._id,
+      await supabase
+        .from('newsletter_coupons')
+        .update({
+          is_used:           true,
+          used_at:           new Date().toISOString(),
+          used_by_user_id:   payload.id,
+          used_in_order_id:  order.id,
+        })
+        .eq('id', newsletterCoupon.id);
+
+      await supabase.from('coupon_logs').insert({
+        email:       newsletterCoupon.email,
+        coupon_code: newsletterCoupon.couponCode,
+        action:      'used',
+        reason:      `Redeemed on order ${order.id}`,
+        user_id:     payload.id,
+        order_id:    order.id,
       });
     }
 

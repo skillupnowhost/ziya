@@ -1,8 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { connectDB } from '@/lib/mongodb';
-import Order from '@/models/Order';
-import User from '@/models/User';
-import Product from '@/models/Product';
+import { supabase, mapRows } from '@/lib/supabase';
 import { getUserFromRequest } from '@/lib/auth';
 
 export async function GET(req: NextRequest) {
@@ -12,34 +9,40 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    await connectDB();
-
     const [
-      totalOrders,
-      totalUsers,
-      totalProducts,
-      revenueResult,
-      recentOrders,
-      ordersByStatus,
+      { count: totalOrders },
+      { count: totalUsers },
+      { count: totalProducts },
+      { data: revenueRows },
+      { data: recentRows },
+      { data: statusRows },
     ] = await Promise.all([
-      Order.countDocuments(),
-      User.countDocuments({ role: 'user' }),
-      Product.countDocuments({ isActive: true }),
-      Order.aggregate([
-        { $match: { paymentStatus: 'paid' } },
-        { $group: { _id: null, total: { $sum: '$total' } } },
-      ]),
-      Order.find().sort({ createdAt: -1 }).limit(5).lean(),
-      Order.aggregate([
-        { $group: { _id: '$status', count: { $sum: 1 } } },
-      ]),
+      supabase.from('orders').select('id', { count: 'exact', head: true }),
+      supabase.from('users').select('id', { count: 'exact', head: true }).eq('role', 'user'),
+      supabase.from('products').select('id', { count: 'exact', head: true }).eq('is_active', true),
+      supabase.from('orders').select('total').eq('payment_status', 'paid'),
+      supabase.from('orders').select('*').order('created_at', { ascending: false }).limit(5),
+      supabase.from('orders').select('status'),
     ]);
 
-    const totalRevenue = revenueResult[0]?.total || 0;
+    const totalRevenue = (revenueRows ?? []).reduce((sum, r) => sum + ((r.total as number) || 0), 0);
+
+    // Group orders by status
+    const statusMap: Record<string, number> = {};
+    for (const r of statusRows ?? []) {
+      const s = r.status as string;
+      statusMap[s] = (statusMap[s] || 0) + 1;
+    }
+    const ordersByStatus = Object.entries(statusMap).map(([_id, count]) => ({ _id, count }));
 
     return NextResponse.json({
-      stats: { totalOrders, totalUsers, totalProducts, totalRevenue },
-      recentOrders,
+      stats: {
+        totalOrders:    totalOrders  ?? 0,
+        totalUsers:     totalUsers   ?? 0,
+        totalProducts:  totalProducts ?? 0,
+        totalRevenue,
+      },
+      recentOrders:  mapRows(recentRows ?? []),
       ordersByStatus,
     });
   } catch (error) {

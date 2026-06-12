@@ -62,7 +62,7 @@ function AnimatedEnvelopeIcon({ focused, active }: { focused: boolean; active: b
 
 /* ─── Bottom-left badge unique animation variants ─── */
 const badgeAnimations = [
-  // 🌸 Free to Join — petal spin + bloom
+  // 🌸 Join Ziya — petal spin + bloom
   {
     animate: { rotate: [0, 15, -10, 20, 0, -15, 10, 0], scale: [1, 1.18, 0.95, 1.22, 1, 0.92, 1.15, 1] },
     transition: { duration: 4.5, repeat: Infinity, ease: 'easeInOut', repeatDelay: 1 },
@@ -85,7 +85,7 @@ const badgeAnimations = [
 ];
 
 const floatingBadges = [
-  { emoji: '🌸', label: 'Free to Join' },
+  { emoji: '🌸', label: 'Join Ziya'    },
   { emoji: '🎁', label: 'Welcome Gift' },
   { emoji: '💎', label: 'VIP Access'   },
   { emoji: '🛍️', label: 'Shop Smarter' },
@@ -480,7 +480,7 @@ function RegisterContent() {
               >
                 🌸
               </motion.span>
-              <span className="text-rose-500 text-[11px] font-semibold tracking-wide">Free to join · No card needed</span>
+              <span className="text-rose-500 text-[11px] font-semibold tracking-wide">Join · No card needed</span>
             </motion.div>
 
             <motion.h1

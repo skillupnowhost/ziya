@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
-import { connectDB } from '@/lib/mongodb';
-import Order from '@/models/Order';
-import Product from '@/models/Product';
+import { supabase, mapRow } from '@/lib/supabase';
 import { getUserFromRequest } from '@/lib/auth';
 
 export async function POST(req: NextRequest) {
@@ -21,26 +19,32 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Invalid payment signature' }, { status: 400 });
     }
 
-    await connectDB();
-    const order = await Order.findByIdAndUpdate(
-      orderId,
-      {
-        paymentStatus: 'paid',
-        paymentId: razorpay_payment_id,
-        razorpayOrderId: razorpay_order_id,
-        status: 'confirmed',
-      },
-      { new: true }
-    );
+    const { data: orderRow, error } = await supabase
+      .from('orders')
+      .update({
+        payment_status:    'paid',
+        payment_id:        razorpay_payment_id,
+        razorpay_order_id: razorpay_order_id,
+        status:            'confirmed',
+      })
+      .eq('id', orderId)
+      .select()
+      .maybeSingle();
 
-    if (!order) return NextResponse.json({ error: 'Order not found' }, { status: 404 });
-
-    // Deduct stock
-    for (const item of order.items) {
-      await Product.findByIdAndUpdate(item.productId, { $inc: { stock: -item.quantity } });
+    if (error || !orderRow) {
+      return NextResponse.json({ error: 'Order not found' }, { status: 404 });
     }
 
-    return NextResponse.json({ message: 'Payment verified', order });
+    // Deduct stock for each item
+    const items = orderRow.items as { productId: string; quantity: number }[];
+    for (const item of items) {
+      await supabase.rpc('decrement_product_stock', {
+        p_id: item.productId,
+        amount: item.quantity,
+      });
+    }
+
+    return NextResponse.json({ message: 'Payment verified', order: mapRow(orderRow) });
   } catch (error) {
     console.error('Payment verify error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

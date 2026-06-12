@@ -9,12 +9,14 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { TagIcon, XMarkIcon, MapPinIcon, PhoneIcon, ShoppingBagIcon } from '@heroicons/react/24/outline';
 
 const ADDRESS_FIELDS = [
-  { key: 'name',    label: 'Full Name',       placeholder: 'Your full name',              full: false, icon: '👤' },
-  { key: 'phone',   label: 'Phone Number',    placeholder: '10-digit mobile number',      full: false, icon: '📱' },
-  { key: 'street',  label: 'Street Address',  placeholder: 'House/Flat no., Street, Area', full: true,  icon: '🏠' },
-  { key: 'city',    label: 'City',            placeholder: 'City',                        full: false, icon: '🏙️' },
-  { key: 'state',   label: 'State',           placeholder: 'State',                       full: false, icon: '📍' },
-  { key: 'pincode', label: 'PIN Code',        placeholder: '6-digit PIN',                 full: false, icon: '🔢' },
+  { key: 'name',        label: 'Full Name',            placeholder: 'Your full name',      full: false, icon: '👤' },
+  { key: 'phone',       label: 'Phone Number',         placeholder: '10-digit number',     full: false, icon: '📱' },
+  { key: 'doorNumber',  label: 'Door / Flat Number',   placeholder: 'e.g. 12B, Flat 3',   full: false, icon: '🏠' },
+  { key: 'streetName',  label: 'Street Name',          placeholder: 'Street or area name', full: false, icon: '🛣️' },
+  { key: 'landmark',    label: 'Landmark (optional)',   placeholder: 'Near park, school…',  full: true,  icon: '📌' },
+  { key: 'city',        label: 'City',                 placeholder: 'City',                full: false, icon: '🏙️' },
+  { key: 'state',       label: 'State',                placeholder: 'State',               full: false, icon: '📍' },
+  { key: 'pincode',     label: 'PIN Code',             placeholder: '6-digit PIN',         full: false, icon: '🔢' },
 ] as const;
 
 function CheckoutContent() {
@@ -34,7 +36,9 @@ function CheckoutContent() {
   const [address, setAddress] = useState({
     name: '',
     phone: '',
-    street: '',
+    doorNumber: '',
+    streetName: '',
+    landmark: '',
     city: '',
     state: '',
     pincode: '',
@@ -95,9 +99,9 @@ function CheckoutContent() {
   };
 
   const handlePlaceOrder = async () => {
-    const missing = ADDRESS_FIELDS.some((f) => !address[f.key as keyof typeof address]);
+    const missing = ADDRESS_FIELDS.some((f) => f.key !== 'landmark' && !address[f.key as keyof typeof address]);
     if (missing) {
-      toast.error('Please fill in all address fields');
+      toast.error('Please fill in all required address fields');
       return;
     }
 

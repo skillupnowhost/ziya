@@ -1,58 +1,76 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { connectDB } from '@/lib/mongodb';
-import Product from '@/models/Product';
+import { supabase, mapRow, mapRows } from '@/lib/supabase';
 import { getUserFromRequest } from '@/lib/auth';
 
 export async function GET(req: NextRequest) {
   try {
-    await connectDB();
     const { searchParams } = new URL(req.url);
-    const page = parseInt(searchParams.get('page') || '1');
-    const limit = parseInt(searchParams.get('limit') || '20');
-    const category = searchParams.get('category');
-    const search = searchParams.get('search');
-    const sort = searchParams.get('sort') || 'createdAt';
-    const order = searchParams.get('order') || 'desc';
+    const page      = parseInt(searchParams.get('page')  || '1');
+    const limit     = parseInt(searchParams.get('limit') || '20');
+    const category  = searchParams.get('category');
+    const search    = searchParams.get('search');
+    const sort      = searchParams.get('sort')  || 'created_at';
+    const order     = searchParams.get('order') || 'desc';
     const isTrending = searchParams.get('trending');
-    const isNew = searchParams.get('new');
+    const isNew      = searchParams.get('new');
     const isFeatured = searchParams.get('featured');
-    const priceMin = searchParams.get('priceMin');
-    const priceMax = searchParams.get('priceMax');
+    const priceMin   = searchParams.get('priceMin');
+    const priceMax   = searchParams.get('priceMax');
 
-    const query: Record<string, unknown> = { isActive: true };
-    if (category) query.category = category;
-    if (isTrending === 'true') query.isTrending = true;
-    if (isNew === 'true') query.isNewProduct = true;
-    if (isFeatured === 'true') query.isFeatured = true;
-    if (search) query.$text = { $search: search };
+    // Map camelCase sort field to snake_case column name
+    const sortColumnMap: Record<string, string> = {
+      createdAt: 'created_at',
+      created_at: 'created_at',
+      price: 'price',
+      rating: 'rating',
+      reviewCount: 'review_count',
+      review_count: 'review_count',
+    };
+    const sortCol = sortColumnMap[sort] || 'created_at';
+    const ascending = order === 'asc';
 
-    /* ── price range: match effective price (discountPrice when set, else price) ── */
+    let query = supabase
+      .from('products')
+      .select('*', { count: 'exact' })
+      .eq('is_active', true);
+
+    if (category)         query = query.eq('category', category);
+    if (isTrending === 'true') query = query.eq('is_trending', true);
+    if (isNew === 'true')      query = query.eq('is_new_product', true);
+    if (isFeatured === 'true') query = query.eq('is_featured', true);
+
+    // Full-text search
+    if (search) {
+      query = query.textSearch('fts', search, { type: 'websearch', config: 'english' });
+    }
+
+    // Price range — match discount_price when set, else price
     if (priceMin !== null || priceMax !== null) {
       const min = priceMin ? parseFloat(priceMin) : null;
       const max = priceMax ? parseFloat(priceMax) : null;
-      const build = (field: string) => {
-        const c: Record<string, number> = {};
-        if (min !== null) c.$gte = min;
-        if (max !== null) c.$lte = max;
-        return { [field]: c };
-      };
-      /* match if discountPrice is in range OR (no discountPrice AND price is in range) */
-      query.$or = [
-        { discountPrice: { ...(min !== null ? { $gte: min } : {}), ...(max !== null ? { $lte: max } : {}), $exists: true, $gt: 0 } },
-        { ...build('price'), $or: [{ discountPrice: { $exists: false } }, { discountPrice: null }, { discountPrice: 0 }] },
-      ];
+
+      const discountFilters: string[] = ['discount_price.not.is.null'];
+      const priceFilters:    string[] = ['discount_price.is.null'];
+
+      if (min !== null) { discountFilters.push(`discount_price.gte.${min}`); priceFilters.push(`price.gte.${min}`); }
+      if (max !== null) { discountFilters.push(`discount_price.lte.${max}`); priceFilters.push(`price.lte.${max}`); }
+
+      query = query.or(`and(${discountFilters.join(',')}),and(${priceFilters.join(',')})`);
     }
 
     const skip = (page - 1) * limit;
-    const sortObj: Record<string, 1 | -1> = { [sort]: order === 'asc' ? 1 : -1 };
+    const { data: rows, count, error } = await query
+      .order(sortCol, { ascending })
+      .range(skip, skip + limit - 1);
 
-    const [products, total] = await Promise.all([
-      Product.find(query).sort(sortObj).skip(skip).limit(limit).lean(),
-      Product.countDocuments(query),
-    ]);
+    if (error) {
+      console.error('Get products error:', error);
+      return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    }
 
+    const total = count ?? 0;
     return NextResponse.json({
-      products,
+      products: mapRows(rows ?? []),
       pagination: { page, limit, total, pages: Math.ceil(total / limit) },
     });
   } catch (error) {
@@ -68,10 +86,41 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    await connectDB();
     const body = await req.json();
-    const product = await Product.create(body);
-    return NextResponse.json({ product }, { status: 201 });
+
+    // Map camelCase body fields to snake_case columns
+    const insert: Record<string, unknown> = {
+      name:            body.name,
+      description:     body.description,
+      category:        body.category,
+      subcategory:     body.subcategory,
+      price:           body.price,
+      discount_price:  body.discountPrice ?? body.discount_price,
+      stock:           body.stock ?? 0,
+      sizes:           body.sizes ?? [],
+      colors:          body.colors ?? [],
+      images:          body.images ?? [],
+      tags:            body.tags ?? [],
+      sku:             body.sku,
+      brand:           body.brand ?? 'Ziya',
+      is_featured:     body.isFeatured  ?? body.is_featured  ?? false,
+      is_new_product:  body.isNewProduct ?? body.is_new_product ?? true,
+      is_trending:     body.isTrending  ?? body.is_trending  ?? false,
+      is_active:       body.isActive    ?? body.is_active    ?? true,
+    };
+
+    const { data: row, error } = await supabase
+      .from('products')
+      .insert(insert)
+      .select()
+      .single();
+
+    if (error || !row) {
+      console.error('Create product error:', error);
+      return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    }
+
+    return NextResponse.json({ product: mapRow(row) }, { status: 201 });
   } catch (error) {
     console.error('Create product error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

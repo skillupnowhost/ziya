@@ -6,6 +6,7 @@ import { TrashIcon, MinusIcon, PlusIcon, TagIcon, ArrowRightIcon, ArrowLeftIcon,
 import { XCircleIcon } from '@heroicons/react/24/solid';
 import toast from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
+import ConfirmDialog from '@/components/ConfirmDialog';
 
 export default function CartPage() {
   const { items, removeItem, updateQuantity, clearCart, subtotal, shippingCost, total } = useCart();
@@ -13,7 +14,8 @@ export default function CartPage() {
   const [appliedPromo, setAppliedPromo] = useState('');
   const [discount, setDiscount] = useState(0);
   const [validating, setValidating] = useState(false);
-  const [confirmClear, setConfirmClear] = useState(false);
+  const [showClearDialog, setShowClearDialog] = useState(false);
+  const [removeTarget, setRemoveTarget] = useState<{ productId: string; size?: string } | null>(null);
 
   const applyPromo = async () => {
     const code = promoCode.trim().toUpperCase();
@@ -87,6 +89,7 @@ export default function CartPage() {
   }
 
   return (
+    <>
     <motion.div
       className="w-full max-w-screen-2xl mx-auto px-4 sm:px-6 md:px-8 lg:px-10 xl:px-14 py-8"
       initial={{ opacity: 0, y: 16 }}
@@ -96,51 +99,15 @@ export default function CartPage() {
       <div className="flex items-center justify-between mb-8">
         <h1 className="text-3xl font-bold text-gray-900 font-serif">Your Cart</h1>
 
-        {/* Clear all — with confirm state */}
-        <AnimatePresence mode="wait">
-          {confirmClear ? (
-            <motion.div
-              key="confirm"
-              className="flex items-center gap-2"
-              initial={{ opacity: 0, x: 10 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: 10 }}
-              transition={{ duration: 0.2 }}
-            >
-              <span className="text-xs text-gray-500 font-medium">Remove all items?</span>
-              <motion.button
-                onClick={() => { clearCart(); setConfirmClear(false); }}
-                className="px-3 py-1.5 text-xs font-bold bg-red-500 text-white rounded-lg shadow-sm shadow-red-200"
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.93 }}
-              >
-                Yes, clear
-              </motion.button>
-              <motion.button
-                onClick={() => setConfirmClear(false)}
-                className="px-3 py-1.5 text-xs font-semibold border border-gray-200 text-gray-600 rounded-lg hover:bg-gray-50 transition-colors"
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.93 }}
-              >
-                Cancel
-              </motion.button>
-            </motion.div>
-          ) : (
-            <motion.button
-              key="clear"
-              onClick={() => setConfirmClear(true)}
-              className="text-sm text-red-400 hover:text-red-500 font-medium transition-colors flex items-center gap-1.5"
-              initial={{ opacity: 0, x: 10 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: 10 }}
-              whileHover={{ scale: 1.04 }}
-              whileTap={{ scale: 0.94 }}
-            >
-              <XCircleIcon className="w-4 h-4" />
-              Clear all
-            </motion.button>
-          )}
-        </AnimatePresence>
+        <motion.button
+          onClick={() => setShowClearDialog(true)}
+          className="text-sm text-red-400 hover:text-red-500 font-medium transition-colors flex items-center gap-1.5"
+          whileHover={{ scale: 1.04 }}
+          whileTap={{ scale: 0.94 }}
+        >
+          <XCircleIcon className="w-4 h-4" />
+          Clear all
+        </motion.button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -174,7 +141,7 @@ export default function CartPage() {
                     </Link>
                     {/* Remove button */}
                     <motion.button
-                      onClick={() => removeItem(item.productId, item.size)}
+                      onClick={() => setRemoveTarget({ productId: item.productId, size: item.size })}
                       className="shrink-0 p-1.5 text-gray-300 hover:text-red-400 hover:bg-red-50 rounded-lg transition-colors"
                       whileHover={{ scale: 1.15, rotate: 8 }}
                       whileTap={{ scale: 0.85 }}
@@ -390,5 +357,30 @@ export default function CartPage() {
         </motion.div>
       </div>
     </motion.div>
+
+    {/* Remove single item confirmation */}
+    <ConfirmDialog
+      open={removeTarget !== null}
+      type="danger"
+      title="Remove item?"
+      message="This item will be removed from your cart. You can always add it back."
+      confirmLabel="Remove"
+      cancelLabel="Keep it"
+      onConfirm={() => { if (removeTarget) { removeItem(removeTarget.productId, removeTarget.size); } setRemoveTarget(null); }}
+      onCancel={() => setRemoveTarget(null)}
+    />
+
+    {/* Clear all confirmation */}
+    <ConfirmDialog
+      open={showClearDialog}
+      type="warning"
+      title="Clear entire cart?"
+      message="All items will be removed. This cannot be undone."
+      confirmLabel="Clear Cart"
+      cancelLabel="Cancel"
+      onConfirm={() => { clearCart(); setShowClearDialog(false); }}
+      onCancel={() => setShowClearDialog(false)}
+    />
+    </>
   );
 }

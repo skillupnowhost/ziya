@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { connectDB } from '@/lib/mongodb';
-import PromoCode from '@/models/PromoCode';
+import { supabase, mapRow, mapRows } from '@/lib/supabase';
 import { getUserFromRequest } from '@/lib/auth';
 
 export async function GET(req: NextRequest) {
@@ -9,9 +8,12 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
-  await connectDB();
-  const codes = await PromoCode.find().sort({ createdAt: -1 }).lean();
-  return NextResponse.json({ codes });
+  const { data: rows } = await supabase
+    .from('promo_codes')
+    .select('*')
+    .order('created_at', { ascending: false });
+
+  return NextResponse.json({ codes: mapRows(rows ?? []) });
 }
 
 export async function POST(req: NextRequest) {
@@ -20,7 +22,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
-  await connectDB();
   const body = await req.json();
   const { code, description, discountType, discountValue, minOrderValue, maxUses, expiresAt } = body;
 
@@ -34,22 +35,28 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Flat discount must be greater than 0' }, { status: 400 });
   }
 
-  try {
-    const promo = await PromoCode.create({
-      code: code.trim().toUpperCase(),
-      description,
-      discountType,
-      discountValue,
-      minOrderValue: minOrderValue || undefined,
-      maxUses: maxUses || undefined,
-      expiresAt: expiresAt || undefined,
-      isActive: true,
-    });
-    return NextResponse.json({ promo }, { status: 201 });
-  } catch (err: unknown) {
-    if ((err as { code?: number }).code === 11000) {
+  const { data: row, error } = await supabase
+    .from('promo_codes')
+    .insert({
+      code:            (code as string).trim().toUpperCase(),
+      description:     description || null,
+      discount_type:   discountType,
+      discount_value:  discountValue,
+      min_order_value: minOrderValue || null,
+      max_uses:        maxUses || null,
+      expires_at:      expiresAt || null,
+      is_active:       true,
+    })
+    .select()
+    .single();
+
+  if (error) {
+    if (error.code === '23505') {
       return NextResponse.json({ error: 'A promo code with that name already exists' }, { status: 409 });
     }
-    throw err;
+    console.error('Create promo error:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
+
+  return NextResponse.json({ promo: mapRow(row) }, { status: 201 });
 }

@@ -1,9 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { connectDB } from '@/lib/mongodb';
-import NewsletterCoupon from '@/models/NewsletterCoupon';
-import CouponLog from '@/models/CouponLog';
-import PromoCode from '@/models/PromoCode';
-import Order from '@/models/Order';
+import { supabase } from '@/lib/supabase';
 import { getUserFromRequest } from '@/lib/auth';
 
 function getClientIp(req: NextRequest): string {
@@ -21,83 +17,93 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ valid: false, error: 'Coupon code is required' }, { status: 400 });
     }
 
-    const code = couponCode.trim().toUpperCase();
+    const code = (couponCode as string).trim().toUpperCase();
     const ipAddress = getClientIp(req);
 
-    await connectDB();
+    // Admin-created promo codes
+    const { data: promo } = await supabase
+      .from('promo_codes')
+      .select('*')
+      .eq('code', code)
+      .maybeSingle();
 
-    // Admin-created promo codes — check DB first
-    const promo = await PromoCode.findOne({ code });
     if (promo) {
-      if (!promo.isActive) {
+      if (!promo.is_active) {
         return NextResponse.json({ valid: false, error: 'This promo code is no longer active' });
       }
-      if (promo.expiresAt && new Date() > promo.expiresAt) {
+      if (promo.expires_at && new Date() > new Date(promo.expires_at as string)) {
         return NextResponse.json({ valid: false, error: 'This promo code has expired' });
       }
-      if (promo.maxUses != null && promo.usedCount >= promo.maxUses) {
+      if (promo.max_uses != null && (promo.used_count as number) >= (promo.max_uses as number)) {
         return NextResponse.json({ valid: false, error: 'This promo code has reached its usage limit' });
       }
-      if (promo.minOrderValue != null && subtotal != null && subtotal < promo.minOrderValue) {
+      if (promo.min_order_value != null && subtotal != null && subtotal < (promo.min_order_value as number)) {
         return NextResponse.json({
           valid: false,
-          error: `Minimum order value of ₹${promo.minOrderValue} required for this code`,
+          error: `Minimum order value of ₹${promo.min_order_value} required for this code`,
         });
       }
       return NextResponse.json({
         valid: true,
-        type: promo.discountType,
-        value: promo.discountValue,
+        type:          promo.discount_type,
+        value:         promo.discount_value,
         code,
-        description: promo.description || null,
-        minOrderValue: promo.minOrderValue || null,
+        description:   promo.description || null,
+        minOrderValue: promo.min_order_value || null,
       });
     }
 
     // Newsletter coupon (ZIYA10-XXXXXXXX format)
     if (code.startsWith('ZIYA10-')) {
       const payload = getUserFromRequest(req);
-      const coupon = await NewsletterCoupon.findOne({ couponCode: code });
+
+      const { data: coupon } = await supabase
+        .from('newsletter_coupons')
+        .select('*')
+        .eq('coupon_code', code)
+        .maybeSingle();
 
       if (!coupon) {
         if (payload) {
-          await CouponLog.create({
-            email: 'unknown',
-            couponCode: code,
-            action: 'rejected_not_found',
-            reason: 'Coupon code does not exist',
-            ipAddress,
-            userId: payload.id,
+          await supabase.from('coupon_logs').insert({
+            email:       'unknown',
+            coupon_code: code,
+            action:      'rejected_not_found',
+            reason:      'Coupon code does not exist',
+            ip_address:  ipAddress,
+            user_id:     payload.id,
           });
         }
         return NextResponse.json({ valid: false, error: 'Invalid coupon code' });
       }
 
-      if (coupon.isUsed) {
-        await CouponLog.create({
-          email: coupon.email,
-          couponCode: code,
-          action: 'rejected_already_used',
-          reason: 'Coupon already redeemed',
-          ipAddress,
-          userId: payload?.id,
+      if (coupon.is_used) {
+        await supabase.from('coupon_logs').insert({
+          email:       coupon.email,
+          coupon_code: code,
+          action:      'rejected_already_used',
+          reason:      'Coupon already redeemed',
+          ip_address:  ipAddress,
+          user_id:     payload?.id ?? null,
         });
         return NextResponse.json({ valid: false, error: 'This coupon has already been used' });
       }
 
       if (payload) {
-        const priorOrders = await Order.countDocuments({
-          userId: payload.id,
-          status: { $in: ['confirmed', 'processing', 'shipped', 'delivered'] },
-        });
-        if (priorOrders > 0) {
-          await CouponLog.create({
-            email: coupon.email,
-            couponCode: code,
-            action: 'rejected_not_first_order',
-            reason: 'User already has prior orders',
-            ipAddress,
-            userId: payload.id,
+        const { count: priorOrders } = await supabase
+          .from('orders')
+          .select('id', { count: 'exact', head: true })
+          .eq('user_id', payload.id as string)
+          .in('status', ['confirmed', 'processing', 'shipped', 'delivered']);
+
+        if ((priorOrders ?? 0) > 0) {
+          await supabase.from('coupon_logs').insert({
+            email:       coupon.email,
+            coupon_code: code,
+            action:      'rejected_not_first_order',
+            reason:      'User already has prior orders',
+            ip_address:  ipAddress,
+            user_id:     payload.id,
           });
           return NextResponse.json({ valid: false, error: 'This coupon is valid on your first order only' });
         }

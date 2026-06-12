@@ -37,6 +37,8 @@ interface Review {
   rating: number;
   title?: string;
   comment: string;
+  images?: string[];
+  videos?: string[];
   createdAt: string;
   isVerifiedPurchase: boolean;
 }
@@ -54,6 +56,10 @@ export default function ProductDetailPage() {
   const [selectedColor, setSelectedColor] = useState('');
   const [quantity, setQuantity] = useState(1);
   const [reviewForm, setReviewForm] = useState({ rating: 5, title: '', comment: '' });
+  const [reviewMediaFiles, setReviewMediaFiles] = useState<File[]>([]);
+  const [reviewMediaPreviews, setReviewMediaPreviews] = useState<{ url: string; type: 'image' | 'video' }[]>([]);
+  const [uploadingMedia, setUploadingMedia] = useState(false);
+  const reviewMediaInputRef = useRef<HTMLInputElement>(null);
   const [submittingReview, setSubmittingReview] = useState(false);
   const [tab, setTab] = useState<'description' | 'reviews'>('description');
 
@@ -84,6 +90,20 @@ export default function ProductDetailPage() {
       setRelated((rRes.data.products || []).filter((p: Product) => p._id !== id).slice(0, 5));
     }).catch(console.error)
       .finally(() => setLoading(false));
+  }, [id]);
+
+  // Real-time review polling every 30s
+  useEffect(() => {
+    if (!id) return;
+    const interval = setInterval(async () => {
+      try {
+        const r = await axios.get(`/api/reviews?productId=${id}&limit=20`);
+        setReviews(r.data.reviews || []);
+      } catch {
+        // silent — stale reviews are fine
+      }
+    }, 30000);
+    return () => clearInterval(interval);
   }, [id]);
 
   // Auto-slide main image every 2s, pause on hover
@@ -146,19 +166,68 @@ export default function ProductDetailPage() {
     toast.success(wishlisted ? 'Removed from favourites' : 'Saved to favourites ♥');
   };
 
+  const handleReviewMediaPick = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const picked = Array.from(e.target.files || []);
+    if (!picked.length) return;
+    const combined = [...reviewMediaFiles, ...picked].slice(0, 5);
+    setReviewMediaFiles(combined);
+    const previews = combined.map((f) => ({
+      url: URL.createObjectURL(f),
+      type: (f.type.startsWith('video/') ? 'video' : 'image') as 'image' | 'video',
+    }));
+    setReviewMediaPreviews(previews);
+    if (reviewMediaInputRef.current) reviewMediaInputRef.current.value = '';
+  };
+
+  const removeReviewMedia = (idx: number) => {
+    const files = reviewMediaFiles.filter((_, i) => i !== idx);
+    setReviewMediaFiles(files);
+    setReviewMediaPreviews(files.map((f) => ({
+      url: URL.createObjectURL(f),
+      type: (f.type.startsWith('video/') ? 'video' : 'image') as 'image' | 'video',
+    })));
+  };
+
   const handleSubmitReview = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) { toast.error('Please login to review'); return; }
     setSubmittingReview(true);
     try {
-      await axios.post('/api/reviews', { productId: id, ...reviewForm });
+      // Upload media files first
+      let uploadedImages: string[] = [];
+      let uploadedVideos: string[] = [];
+      if (reviewMediaFiles.length > 0) {
+        setUploadingMedia(true);
+        const results = await Promise.all(
+          reviewMediaFiles.map(async (file) => {
+            const fd = new FormData();
+            fd.append('file', file);
+            const res = await axios.post('/api/upload/review-media', fd, {
+              headers: { 'Content-Type': 'multipart/form-data' },
+            });
+            return res.data as { url: string; type: 'image' | 'video' };
+          })
+        );
+        uploadedImages = results.filter((r) => r.type === 'image').map((r) => r.url);
+        uploadedVideos = results.filter((r) => r.type === 'video').map((r) => r.url);
+        setUploadingMedia(false);
+      }
+      await axios.post('/api/reviews', {
+        productId: id,
+        ...reviewForm,
+        images: uploadedImages,
+        videos: uploadedVideos,
+      });
       toast.success('Review submitted!');
-      const r = await axios.get(`/api/reviews?productId=${id}&limit=10`);
+      const r = await axios.get(`/api/reviews?productId=${id}&limit=20`);
       setReviews(r.data.reviews || []);
       setReviewForm({ rating: 5, title: '', comment: '' });
+      setReviewMediaFiles([]);
+      setReviewMediaPreviews([]);
     } catch (err: unknown) {
       const msg = axios.isAxiosError(err) ? err.response?.data?.error : 'Failed to submit';
       toast.error(msg || 'Failed to submit');
+      setUploadingMedia(false);
     } finally {
       setSubmittingReview(false);
     }
@@ -447,6 +516,23 @@ export default function ProductDetailPage() {
             </div>
           </div>
 
+          {/* Description snippet */}
+          {product.description && (
+            <div className="mb-6 p-4 bg-gray-50 rounded-2xl">
+              <p className="text-xs font-black uppercase tracking-[0.12em] text-gray-400 mb-2">About this product</p>
+              <p className="text-sm text-gray-600 leading-relaxed line-clamp-3">{product.description}</p>
+              {product.description.length > 200 && (
+                <button
+                  type="button"
+                  onClick={() => setTab('description')}
+                  className="mt-2 text-xs font-bold text-rose-400 hover:text-rose-500 transition-colors"
+                >
+                  Read more ↓
+                </button>
+              )}
+            </div>
+          )}
+
           {/* USPs */}
           <div className="grid grid-cols-2 gap-3 p-4 bg-gray-50 rounded-2xl">
             <div className="flex flex-col items-center text-center gap-1">
@@ -469,6 +555,7 @@ export default function ProductDetailPage() {
           {(['description', 'reviews'] as const).map((t) => (
             <button
               key={t}
+              type="button"
               onClick={() => setTab(t)}
               className={`px-6 py-2.5 text-sm font-medium capitalize transition-colors border-b-2 -mb-px ${
                 tab === t ? 'border-rose-400 text-rose-400' : 'border-transparent text-gray-500 hover:text-gray-700'
@@ -523,13 +610,70 @@ export default function ProductDetailPage() {
                   required
                   className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-rose-300 bg-white resize-none"
                 />
-                <button
-                  type="submit"
-                  disabled={submittingReview || !user}
-                  className="px-6 py-2.5 bg-rose-400 text-white text-sm font-semibold rounded-full hover:bg-rose-500 transition-colors disabled:opacity-50"
-                >
-                  {submittingReview ? 'Submitting...' : user ? 'Submit Review' : 'Login to Review'}
-                </button>
+
+                {/* Media previews */}
+                {reviewMediaPreviews.length > 0 && (
+                  <div className="flex flex-wrap gap-2">
+                    {reviewMediaPreviews.map((m, i) => (
+                      <div key={i} className="relative group w-20 h-20 rounded-xl overflow-hidden border border-rose-200 bg-gray-100 shrink-0">
+                        {m.type === 'image' ? (
+                          <img src={m.url} alt="" className="w-full h-full object-cover" />
+                        ) : (
+                          <video src={m.url} className="w-full h-full object-cover" muted />
+                        )}
+                        {m.type === 'video' && (
+                          <div className="absolute inset-0 flex items-center justify-center bg-black/30 pointer-events-none">
+                            <span className="text-white text-xs font-bold">▶</span>
+                          </div>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => removeReviewMedia(i)}
+                          className="absolute top-0.5 right-0.5 w-5 h-5 bg-red-500 text-white rounded-full text-xs flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                        >×</button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Media pick button + hidden input */}
+                <input
+                  ref={reviewMediaInputRef}
+                  type="file"
+                  accept="image/*,video/*"
+                  multiple
+                  className="hidden"
+                  title="Add photos or videos"
+                  aria-label="Add photos or videos to review"
+                  onChange={handleReviewMediaPick}
+                />
+
+                <div className="flex flex-wrap items-center gap-3">
+                  {reviewMediaFiles.length < 5 && (
+                    <button
+                      type="button"
+                      onClick={() => reviewMediaInputRef.current?.click()}
+                      disabled={!user}
+                      className="flex items-center gap-2 px-4 py-2 text-sm font-semibold border-2 border-dashed border-rose-300 text-rose-500 rounded-xl hover:bg-rose-100 transition-colors disabled:opacity-40"
+                    >
+                      <span className="text-lg leading-none">📎</span>
+                      {reviewMediaFiles.length === 0 ? 'Add Photos/Videos' : `Add more (${reviewMediaFiles.length}/5)`}
+                    </button>
+                  )}
+                  <button
+                    type="submit"
+                    disabled={submittingReview || uploadingMedia || !user}
+                    className="px-6 py-2.5 bg-rose-400 text-white text-sm font-semibold rounded-full hover:bg-rose-500 transition-colors disabled:opacity-50 flex items-center gap-2"
+                  >
+                    {(submittingReview || uploadingMedia) && (
+                      <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
+                        <circle className="opacity-30" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" />
+                        <path className="opacity-80" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                      </svg>
+                    )}
+                    {uploadingMedia ? 'Uploading…' : submittingReview ? 'Submitting…' : user ? 'Submit Review' : 'Login to Review'}
+                  </button>
+                </div>
               </form>
             </div>
 
@@ -541,9 +685,13 @@ export default function ProductDetailPage() {
                 <div key={r._id} className="bg-white border border-gray-100 rounded-2xl p-5">
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 bg-rose-200 rounded-full flex items-center justify-center text-rose-600 font-bold text-sm">
-                        {r.userName.charAt(0).toUpperCase()}
-                      </div>
+                      {r.userAvatar ? (
+                        <img src={r.userAvatar} alt={r.userName} className="w-9 h-9 rounded-full object-cover" />
+                      ) : (
+                        <div className="w-9 h-9 bg-rose-200 rounded-full flex items-center justify-center text-rose-600 font-bold text-sm">
+                          {r.userName.charAt(0).toUpperCase()}
+                        </div>
+                      )}
                       <div>
                         <p className="text-sm font-semibold text-gray-800">{r.userName}</p>
                         <p className="text-xs text-gray-400">{new Date(r.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
@@ -560,6 +708,32 @@ export default function ProductDetailPage() {
                   </div>
                   {r.title && <p className="text-sm font-semibold text-gray-800 mb-1">{r.title}</p>}
                   <p className="text-sm text-gray-600 leading-relaxed">{r.comment}</p>
+
+                  {/* Review images */}
+                  {r.images && r.images.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mt-3">
+                      {r.images.map((img, i) => (
+                        <a key={i} href={img} target="_blank" rel="noopener noreferrer">
+                          <img src={img} alt={`Review photo ${i + 1}`} className="w-20 h-20 object-cover rounded-xl border border-gray-100 hover:opacity-90 transition-opacity" />
+                        </a>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Review videos */}
+                  {r.videos && r.videos.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mt-3">
+                      {r.videos.map((vid, i) => (
+                        <video
+                          key={i}
+                          src={vid}
+                          controls
+                          className="w-48 max-w-full rounded-xl border border-gray-100"
+                          style={{ maxHeight: '180px' }}
+                        />
+                      ))}
+                    </div>
+                  )}
                 </div>
               ))}
             </div>

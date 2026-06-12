@@ -1,15 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { connectDB } from '@/lib/mongodb';
-import Product from '@/models/Product';
+import { supabase, mapRow } from '@/lib/supabase';
 import { getUserFromRequest } from '@/lib/auth';
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    await connectDB();
     const { id } = await params;
-    const product = await Product.findById(id).lean();
-    if (!product) return NextResponse.json({ error: 'Product not found' }, { status: 404 });
-    return NextResponse.json({ product });
+
+    const { data: row, error } = await supabase
+      .from('products')
+      .select('*')
+      .eq('id', id)
+      .maybeSingle();
+
+    if (error || !row) return NextResponse.json({ error: 'Product not found' }, { status: 404 });
+    return NextResponse.json({ product: mapRow(row) });
   } catch {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
@@ -22,12 +26,34 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    await connectDB();
     const { id } = await params;
     const body = await req.json();
-    const product = await Product.findByIdAndUpdate(id, body, { new: true, runValidators: true });
-    if (!product) return NextResponse.json({ error: 'Product not found' }, { status: 404 });
-    return NextResponse.json({ product });
+
+    // Map any camelCase fields to snake_case for DB
+    const update: Record<string, unknown> = {};
+    const camelToSnake: Record<string, string> = {
+      discountPrice: 'discount_price',
+      reviewCount:   'review_count',
+      isFeatured:    'is_featured',
+      isNewProduct:  'is_new_product',
+      isTrending:    'is_trending',
+      isActive:      'is_active',
+    };
+
+    for (const [k, v] of Object.entries(body)) {
+      const col = camelToSnake[k] ?? k;
+      update[col] = v;
+    }
+
+    const { data: row, error } = await supabase
+      .from('products')
+      .update(update)
+      .eq('id', id)
+      .select()
+      .maybeSingle();
+
+    if (error || !row) return NextResponse.json({ error: 'Product not found' }, { status: 404 });
+    return NextResponse.json({ product: mapRow(row) });
   } catch (error) {
     console.error('Update product error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
@@ -41,9 +67,8 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    await connectDB();
     const { id } = await params;
-    await Product.findByIdAndDelete(id);
+    await supabase.from('products').delete().eq('id', id);
     return NextResponse.json({ message: 'Product deleted' });
   } catch {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
-import { FaInstagram, FaFacebook, FaPinterest, FaYoutube } from 'react-icons/fa';
+import { FaInstagram, FaFacebook } from 'react-icons/fa';
 import {
   EnvelopeIcon,
   ClipboardDocumentIcon,
@@ -29,10 +29,8 @@ const support = [
 ];
 
 const socials = [
-  { icon: FaInstagram, label: 'Instagram', color: 'hover:text-pink-400', hoverBg: 'hover:bg-pink-400/15' },
-  { icon: FaFacebook, label: 'Facebook', color: 'hover:text-blue-400', hoverBg: 'hover:bg-blue-400/15' },
-  { icon: FaPinterest, label: 'Pinterest', color: 'hover:text-red-400', hoverBg: 'hover:bg-red-400/15' },
-  { icon: FaYoutube, label: 'YouTube', color: 'hover:text-rose-400', hoverBg: 'hover:bg-rose-400/15' },
+  { icon: FaInstagram, label: 'Instagram', href: 'https://www.instagram.com/ziya.thefashioncloset?igsh=MThoZjZtMzFyOHhtYg==', color: 'hover:text-pink-400', hoverBg: 'hover:bg-pink-400/15' },
+  { icon: FaFacebook, label: 'Facebook', href: 'https://www.facebook.com/profile.php?id=61590776248533', color: 'hover:text-blue-400', hoverBg: 'hover:bg-blue-400/15' },
 ];
 
 const contactItems = [
@@ -324,10 +322,12 @@ export default function Footer() {
               </p>
               {/* Animated social icons */}
               <div className="flex space-x-2 mt-5">
-                {socials.map(({ icon: Icon, label, color, hoverBg }, i) => (
+                {socials.map(({ icon: Icon, label, href, color, hoverBg }, i) => (
                   <motion.a
                     key={label}
-                    href="#"
+                    href={href}
+                    target="_blank"
+                    rel="noopener noreferrer"
                     aria-label={label}
                     className={`w-9 h-9 rounded-xl bg-white/5 flex items-center justify-center text-gray-400 ${color} ${hoverBg} transition-colors duration-200`}
                     initial={{ opacity: 0, y: 12 }}
