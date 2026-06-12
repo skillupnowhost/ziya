@@ -4,7 +4,8 @@ import { useParams } from 'next/navigation';
 import axios from 'axios';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { ChatBubbleLeftEllipsisIcon, MapPinIcon, CreditCardIcon, CheckIcon, PencilSquareIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import { ChatBubbleLeftEllipsisIcon, MapPinIcon, CreditCardIcon, CheckIcon, PencilSquareIcon, XMarkIcon, TruckIcon, ArrowTopRightOnSquareIcon } from '@heroicons/react/24/outline';
+import { getCourierTrackUrl, getCourierName } from '@/lib/couriers';
 
 const STATUS_STEPS = ['pending', 'confirmed', 'processing', 'shipped', 'delivered'];
 const STATUS_COLORS: Record<string, string> = {
@@ -29,6 +30,7 @@ interface Order {
   paymentMethod: string;
   createdAt: string;
   trackingNumber?: string;
+  courierService?: string;
   notes?: string;
 }
 
@@ -369,9 +371,27 @@ export default function OrderDetailPage() {
                 </motion.span>
               </div>
               {order.trackingNumber && (
-                <div className="flex justify-between pt-1 border-t border-gray-100">
-                  <span className="text-gray-600">Tracking #</span>
-                  <span className="font-medium text-indigo-600 break-all text-right max-w-[120px]">{order.trackingNumber}</span>
+                <div className="pt-2 border-t border-gray-100 space-y-2">
+                  <div className="flex justify-between">
+                    <span className="text-gray-600 text-xs">Courier</span>
+                    <span className="font-medium text-gray-800 text-xs">{getCourierName(order.courierService)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600 text-xs">Tracking #</span>
+                    <span className="font-mono font-medium text-indigo-600 break-all text-right max-w-[130px] text-xs">{order.trackingNumber}</span>
+                  </div>
+                  {getCourierTrackUrl(order.courierService, order.trackingNumber) && (
+                    <a
+                      href={getCourierTrackUrl(order.courierService, order.trackingNumber)!}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="mt-1 w-full flex items-center justify-center gap-2 py-2.5 bg-gradient-to-r from-indigo-500 to-violet-500 text-white text-xs font-bold rounded-xl shadow-sm shadow-indigo-200 hover:from-indigo-600 hover:to-violet-600 transition-all"
+                    >
+                      <TruckIcon className="w-3.5 h-3.5" />
+                      Track Your Order
+                      <ArrowTopRightOnSquareIcon className="w-3 h-3" />
+                    </a>
+                  )}
                 </div>
               )}
             </div>
@@ -403,7 +423,7 @@ export default function OrderDetailPage() {
           >
             <div className="flex items-center justify-between mb-5">
               <h2 className="text-base font-bold text-gray-900">Update Shipping Address</h2>
-              <button type="button" onClick={() => setEditingAddress(false)} className="text-gray-400 hover:text-gray-600 transition-colors">
+              <button type="button" title="Close" onClick={() => setEditingAddress(false)} className="text-gray-400 hover:text-gray-600 transition-colors">
                 <XMarkIcon className="w-5 h-5" />
               </button>
             </div>

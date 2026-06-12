@@ -63,6 +63,7 @@ CREATE TABLE IF NOT EXISTS orders (
   promo_code        TEXT,
   status            TEXT           DEFAULT 'pending' CHECK (status IN ('pending','confirmed','processing','shipped','delivered','cancelled')),
   tracking_number   TEXT,
+  courier_service   TEXT,
   notes             TEXT,
   created_at        TIMESTAMPTZ    DEFAULT NOW(),
   updated_at        TIMESTAMPTZ    DEFAULT NOW()

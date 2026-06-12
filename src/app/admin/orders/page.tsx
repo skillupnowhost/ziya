@@ -17,6 +17,7 @@ import {
   ClockIcon,
   CheckCircleIcon,
 } from '@heroicons/react/24/solid';
+import { COURIER_OPTIONS, getCourierName } from '@/lib/couriers';
 
 interface Order {
   _id: string;
@@ -36,6 +37,7 @@ interface Order {
     pincode?: string;
   };
   trackingNumber?: string;
+  courierService?: string;
   notes?: string;
   createdAt: string;
 }
@@ -60,16 +62,17 @@ function StatusModal({
 }: {
   order: Order;
   nextStatus: string;
-  onConfirm: (notes: string, trackingNumber: string) => void;
+  onConfirm: (notes: string, trackingNumber: string, courierService: string) => void;
   onClose: () => void;
 }) {
   const [notes, setNotes] = useState('');
   const [tracking, setTracking] = useState(order.trackingNumber || '');
+  const [courier, setCourier] = useState(order.courierService || '');
   const [busy, setBusy] = useState(false);
 
   const handle = async () => {
     setBusy(true);
-    await onConfirm(notes, tracking);
+    await onConfirm(notes, tracking, courier);
     setBusy(false);
   };
 
@@ -103,20 +106,38 @@ function StatusModal({
           </div>
         </div>
 
-        {/* Tracking number (shown for shipped/delivered) */}
+        {/* Tracking details (shown for shipped/delivered) */}
         {(nextStatus === 'shipped' || nextStatus === 'delivered') && (
-          <div className="mb-4">
-            <label className="text-xs font-semibold text-gray-600 mb-1.5 flex items-center gap-1.5 block">
-              <TruckIcon className="w-3.5 h-3.5" />
-              Tracking Number
-            </label>
-            <input
-              type="text"
-              value={tracking}
-              onChange={(e) => setTracking(e.target.value)}
-              placeholder="e.g. BD123456789IN"
-              className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-rose-300 focus:ring-2 focus:ring-rose-100 transition-all"
-            />
+          <div className="mb-4 space-y-3">
+            <div>
+              <label className="text-xs font-semibold text-gray-600 mb-1.5 flex items-center gap-1.5 block">
+                <TruckIcon className="w-3.5 h-3.5" />
+                Courier Service
+              </label>
+              <select
+                value={courier}
+                onChange={(e) => setCourier(e.target.value)}
+                title="Select courier service"
+                className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-rose-300 focus:ring-2 focus:ring-rose-100 transition-all bg-white"
+              >
+                <option value="">— Select courier —</option>
+                {COURIER_OPTIONS.map((c) => (
+                  <option key={c.value} value={c.value}>{c.name}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="text-xs font-semibold text-gray-600 mb-1.5 block">
+                Tracking Number
+              </label>
+              <input
+                type="text"
+                value={tracking}
+                onChange={(e) => setTracking(e.target.value)}
+                placeholder="e.g. ET123456789IN"
+                className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-rose-300 focus:ring-2 focus:ring-rose-100 transition-all"
+              />
+            </div>
           </div>
         )}
 
@@ -412,7 +433,8 @@ function OrderCard({
       {order.trackingNumber && (
         <div className="flex items-center gap-1.5 text-xs text-indigo-600 bg-indigo-50 px-3 py-1.5 rounded-lg">
           <TruckIcon className="w-3.5 h-3.5" />
-          Tracking: <span className="font-mono font-semibold">{order.trackingNumber}</span>
+          <span>{getCourierName(order.courierService)}:</span>
+          <span className="font-mono font-semibold">{order.trackingNumber}</span>
         </div>
       )}
 
@@ -481,16 +503,19 @@ export default function AdminOrdersPage() {
     setStatusModal({ order, nextStatus });
   };
 
-  const confirmStatusChange = async (notes: string, trackingNumber: string) => {
+  const confirmStatusChange = async (notes: string, trackingNumber: string, courierService: string) => {
     if (!statusModal) return;
     const { order, nextStatus } = statusModal;
     try {
       const update: Record<string, string> = { status: nextStatus, notes };
-      if (trackingNumber) update.trackingNumber = trackingNumber;
+      if (trackingNumber)  update.trackingNumber  = trackingNumber;
+      if (courierService)  update.courierService  = courierService;
       await axios.put(`/api/orders/${order._id}`, update);
       setOrders((prev) =>
         prev.map((o) =>
-          o._id === order._id ? { ...o, status: nextStatus, notes, trackingNumber: trackingNumber || o.trackingNumber } : o
+          o._id === order._id
+            ? { ...o, status: nextStatus, notes, trackingNumber: trackingNumber || o.trackingNumber, courierService: courierService || o.courierService }
+            : o
         )
       );
       toast.success('Status updated');
@@ -714,7 +739,7 @@ export default function AdminOrdersPage() {
                           </select>
                           {order.trackingNumber && (
                             <p className="text-[10px] text-indigo-500 mt-0.5 font-mono">
-                              🚚 {order.trackingNumber}
+                              🚚 {getCourierName(order.courierService)}: {order.trackingNumber}
                             </p>
                           )}
                           {order.notes && (

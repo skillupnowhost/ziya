@@ -24,7 +24,7 @@ const categories = [
 const support = [
   { label: 'FAQ', href: '/faq' },
   { label: 'Shipping Policy', href: '/shipping' },
-  { label: 'Track Order', href: '/orders' },
+  { label: 'Track Order', href: '/track-order' },
   { label: 'Contact Us', href: '/contact' },
 ];
 

@@ -37,10 +37,11 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     const body = await req.json();
 
     const update: Record<string, unknown> = {};
-    if (body.status         !== undefined) update.status          = body.status;
-    if (body.paymentStatus  !== undefined) update.payment_status  = body.paymentStatus;
-    if (body.trackingNumber !== undefined) update.tracking_number = body.trackingNumber;
-    if (body.notes          !== undefined) update.notes           = body.notes;
+    if (body.status          !== undefined) update.status           = body.status;
+    if (body.paymentStatus   !== undefined) update.payment_status   = body.paymentStatus;
+    if (body.trackingNumber  !== undefined) update.tracking_number  = body.trackingNumber;
+    if (body.courierService  !== undefined) update.courier_service  = body.courierService;
+    if (body.notes           !== undefined) update.notes            = body.notes;
 
     // Deduct stock when admin confirms payment for manual orders
     if (body.paymentStatus === 'paid') {
