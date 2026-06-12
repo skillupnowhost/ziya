@@ -5,7 +5,8 @@ import axios from 'axios';
 import Link from 'next/link';
 import { CheckCircleIcon, ClockIcon } from '@heroicons/react/24/solid';
 import { PhoneIcon, ChatBubbleLeftRightIcon, TruckIcon } from '@heroicons/react/24/outline';
-import { motion } from 'framer-motion';
+import { motion, type Variants } from 'framer-motion';
+import { EASE_SMOOTH } from '@/lib/easing';
 
 interface Order {
   _id: string;
@@ -36,12 +37,12 @@ const containerVariants = {
   },
 };
 
-const itemVariants = {
+const itemVariants: Variants = {
   hidden: { opacity: 0, y: 20 },
   show: {
     opacity: 1,
     y: 0,
-    transition: { duration: 0.45, ease: [0.22, 1, 0.36, 1] },
+    transition: { duration: 0.45, ease: EASE_SMOOTH },
   },
 };
 

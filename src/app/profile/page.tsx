@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, Suspense } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useWishlist } from '@/context/WishlistContext';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -36,7 +36,7 @@ interface Address {
 
 type Tab = 'profile' | 'addresses' | 'favourites';
 
-export default function ProfilePage() {
+function ProfileContent() {
   const { user, loading: authLoading, updateUser } = useAuth();
   const { items: wishlistItems, remove: removeWishlist } = useWishlist();
   const router = useRouter();
@@ -809,5 +809,13 @@ export default function ProfilePage() {
       onCancel={() => setRemoveAddrIdx(null)}
     />
     </div>
+  );
+}
+
+export default function ProfilePage() {
+  return (
+    <Suspense fallback={null}>
+      <ProfileContent />
+    </Suspense>
   );
 }

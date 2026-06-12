@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { HomeIcon, HeartIcon, ShoppingBagIcon, UserIcon } from '@heroicons/react/24/outline';
 import { HomeIcon as HomeSolid, HeartIcon as HeartSolid, ShoppingBagIcon as BagSolid, UserIcon as UserSolid } from '@heroicons/react/24/solid';
-import { motion, AnimatePresence, type Transition } from 'framer-motion';
+import { motion, AnimatePresence, type Transition, type TargetAndTransition } from 'framer-motion';
 import { useCart } from '@/context/CartContext';
 import { useWishlist } from '@/context/WishlistContext';
 import { useAuth } from '@/context/AuthContext';
@@ -11,7 +11,7 @@ import { useAuth } from '@/context/AuthContext';
 /* ── per-icon active animations ── */
 const spring: Transition = { type: 'spring', stiffness: 480, damping: 28 };
 
-const ICON_ANIMS: Record<string, { animate: object; transition: object }> = {
+const ICON_ANIMS: Record<string, { animate: TargetAndTransition; transition: Transition }> = {
   Home: {
     // house gently floats up-down like hovering
     animate: { y: [0, -5, 0, -3, 0] },
@@ -150,8 +150,8 @@ export default function MobileBottomNav() {
                   {/* unique animation when active */}
                   {isActive ? (
                     <motion.div
-                      animate={iconAnim.animate as object}
-                      transition={iconAnim.transition as object}
+                      animate={iconAnim.animate}
+                      transition={iconAnim.transition}
                     >
                       {/* glow ring on active */}
                       <motion.div

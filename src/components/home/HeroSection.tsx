@@ -1,26 +1,27 @@
 'use client';
 import Link from 'next/link';
 import { FireIcon, TruckIcon } from '@heroicons/react/24/solid';
-import { motion } from 'framer-motion';
+import { motion, type Variants } from 'framer-motion';
+import { EASE_SMOOTH, EASE_SPRING } from '@/lib/easing';
 
-const heroText = {
+const heroText: Variants = {
   hidden: {},
   show: { transition: { staggerChildren: 0.1, delayChildren: 0.1 } },
 };
 
-const line = {
+const line: Variants = {
   hidden: { opacity: 0, y: 22 },
-  show: { opacity: 1, y: 0, transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] } },
+  show: { opacity: 1, y: 0, transition: { duration: 0.6, ease: EASE_SMOOTH } },
 };
 
-const imageVariant = {
+const imageVariant: Variants = {
   hidden: { opacity: 0, scale: 0.92, x: 30 },
-  show: { opacity: 1, scale: 1, x: 0, transition: { duration: 0.75, ease: [0.22, 1, 0.36, 1] } },
+  show: { opacity: 1, scale: 1, x: 0, transition: { duration: 0.75, ease: EASE_SMOOTH } },
 };
 
-const badgeFloat = {
+const badgeFloat: Variants = {
   hidden: { opacity: 0, scale: 0.85 },
-  show: { opacity: 1, scale: 1, transition: { duration: 0.55, ease: [0.34, 1.56, 0.64, 1] } },
+  show: { opacity: 1, scale: 1, transition: { duration: 0.55, ease: EASE_SPRING } },
 };
 
 export default function HeroSection() {

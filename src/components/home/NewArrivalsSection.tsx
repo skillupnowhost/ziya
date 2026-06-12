@@ -3,7 +3,8 @@ import { useEffect, useState, useCallback } from 'react';
 import axios from 'axios';
 import ProductCard from '@/components/ProductCard';
 import Link from 'next/link';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, type Variants } from 'framer-motion';
+import { EASE_SMOOTH } from '@/lib/easing';
 
 interface Product {
   _id: string;
@@ -21,14 +22,14 @@ interface Product {
 
 const TABS = ['All', 'Dresses', 'Accessories', 'Stationery'];
 
-const gridVariants = {
+const gridVariants: Variants = {
   hidden: {},
   show: { transition: { staggerChildren: 0.07 } },
 };
 
-const cardVariant = {
+const cardVariant: Variants = {
   hidden: { opacity: 0, y: 24, scale: 0.96 },
-  show: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.45, ease: [0.22, 1, 0.36, 1] } },
+  show: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.45, ease: EASE_SMOOTH } },
 };
 
 export default function NewArrivalsSection() {

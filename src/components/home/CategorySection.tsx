@@ -1,7 +1,8 @@
 'use client';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion, type Variants } from 'framer-motion';
+import { EASE_SMOOTH } from '@/lib/easing';
 
 const categoryConfig = [
   {
@@ -34,13 +35,13 @@ interface CategoryCount {
   [key: string]: number;
 }
 
-const cardVariants = {
+const cardVariants: Variants = {
   hidden: { opacity: 0, y: 32, scale: 0.95 },
   show: (i: number) => ({
     opacity: 1,
     y: 0,
     scale: 1,
-    transition: { duration: 0.55, delay: i * 0.1, ease: [0.22, 1, 0.36, 1] },
+    transition: { duration: 0.55, delay: i * 0.1, ease: EASE_SMOOTH },
   }),
 };
 

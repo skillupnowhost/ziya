@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { motion, AnimatePresence, type Transition, type Variants } from 'framer-motion';
+import { motion, AnimatePresence, type Transition, type Variants, type TargetAndTransition } from 'framer-motion';
 import Link from 'next/link';
 import axios from 'axios';
 import { useAuth } from '@/context/AuthContext';
@@ -21,7 +21,13 @@ const stagger = (s = 0.1, d = 0.05): Variants => ({
   hidden: {}, show: { transition: { staggerChildren: s, delayChildren: d } },
 });
 
-const STAGES = [
+const STAGES: Array<{
+  id: string; num: string; label: string; sub: string;
+  Icon: React.ComponentType<{ className?: string }>;
+  color: string; glow: string; ring: string;
+  bg: string; border: string; bgCard: string; borderCard: string;
+  iconAnim: { animate: TargetAndTransition; transition: Transition };
+}> = [
   {
     id: 'pending',    num: '01', label: 'Pending',    sub: 'Awaiting confirmation',
     Icon: ClockIcon,
@@ -542,8 +548,8 @@ export default function TrackOrderPage() {
                   <motion.div
                     className="w-10 h-10 rounded-xl flex items-center justify-center text-white flex-shrink-0"
                     style={{ background: `linear-gradient(145deg,${stage.color},${stage.color}bb)` }}
-                    animate={stage.iconAnim.animate as object}
-                    transition={stage.iconAnim.transition as object}>
+                    animate={stage.iconAnim.animate}
+                    transition={stage.iconAnim.transition}>
                     <stage.Icon className="w-5 h-5" />
                   </motion.div>
                   <div>

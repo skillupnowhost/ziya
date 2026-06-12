@@ -12,7 +12,7 @@ import {
   ArrowRightIcon,
   SparklesIcon,
 } from '@heroicons/react/24/outline';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, type Transition, type TargetAndTransition } from 'framer-motion';
 
 /* ─── Animated envelope icon — flap morphs open on focus ─── */
 function AnimatedEnvelopeIcon({ focused, active }: { focused: boolean; active: boolean }) {
@@ -59,7 +59,7 @@ function AnimatedEnvelopeIcon({ focused, active }: { focused: boolean; active: b
 }
 
 /* ─── Bottom-left badge unique animation variants ─── */
-const badgeAnimations = [
+const badgeAnimations: Array<{ animate: TargetAndTransition; transition: Transition }> = [
   // 🌸 Korean Style — petal spin + bloom
   {
     animate: { rotate: [0, 15, -10, 20, 0, -15, 10, 0], scale: [1, 1.18, 0.95, 1.22, 1, 0.92, 1.15, 1] },
@@ -96,7 +96,7 @@ const features = [
 ];
 
 /* ─── Per-feature icon animations ─── */
-const featureIconAnimations = [
+const featureIconAnimations: Array<{ animate: TargetAndTransition; transition: Transition; glow: string }> = [
   // 🛍️ — shopping bag pendulum swing
   {
     animate: { rotate: [-10, 10, -10], y: [0, -3, 0] },

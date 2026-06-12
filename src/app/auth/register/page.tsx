@@ -14,7 +14,7 @@ import {
   SparklesIcon,
   CheckIcon,
 } from '@heroicons/react/24/outline';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, type Transition, type TargetAndTransition } from 'framer-motion';
 
 /* ─── Animated envelope icon — flap morphs open on focus ─── */
 function AnimatedEnvelopeIcon({ focused, active }: { focused: boolean; active: boolean }) {
@@ -61,7 +61,7 @@ function AnimatedEnvelopeIcon({ focused, active }: { focused: boolean; active: b
 }
 
 /* ─── Bottom-left badge unique animation variants ─── */
-const badgeAnimations = [
+const badgeAnimations: Array<{ animate: TargetAndTransition; transition: Transition }> = [
   // 🌸 Join Ziya — petal spin + bloom
   {
     animate: { rotate: [0, 15, -10, 20, 0, -15, 10, 0], scale: [1, 1.18, 0.95, 1.22, 1, 0.92, 1.15, 1] },
@@ -99,7 +99,7 @@ const perks = [
 ];
 
 /* ─── Per-perk icon animations ─── */
-const perkIconAnimations = [
+const perkIconAnimations: Array<{ animate: TargetAndTransition; transition: Transition; glow: string }> = [
   // 🎀 — ribbon elastic twist
   {
     animate: { rotate: [0, -18, 18, -10, 10, 0], scale: [1, 0.92, 1.08, 0.95, 1.05, 1] },

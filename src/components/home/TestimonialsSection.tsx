@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion, type Variants } from 'framer-motion';
+import { EASE_SMOOTH } from '@/lib/easing';
 
 interface ReviewData {
   _id: string;
@@ -62,11 +63,11 @@ function Avatar({ name, avatar }: { name: string; avatar: string | null }) {
   );
 }
 
-const cardVariants = {
+const cardVariants: Variants = {
   hidden: { opacity: 0, y: 28, scale: 0.96 },
   show: (i: number) => ({
     opacity: 1, y: 0, scale: 1,
-    transition: { duration: 0.55, delay: i * 0.1, ease: [0.22, 1, 0.36, 1] },
+    transition: { duration: 0.55, delay: i * 0.1, ease: EASE_SMOOTH },
   }),
 };
 
