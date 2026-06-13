@@ -65,7 +65,8 @@ export default function AdminCustomersPage() {
         </button>
       </div>
 
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+      {/* ── Desktop table ── */}
+      <div className="hidden sm:block bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="bg-gray-50 border-b border-gray-100">
@@ -109,13 +110,70 @@ export default function AdminCustomersPage() {
             </tbody>
           </table>
         </div>
-
         {totalPages > 1 && (
           <div className="flex items-center justify-between px-4 py-3 border-t border-gray-100">
             <span className="text-xs text-gray-500">Page {page} of {totalPages}</span>
             <div className="flex gap-2">
               <button onClick={() => fetchCustomers(page - 1)} disabled={page === 1} className="px-3 py-1.5 text-xs border border-gray-200 rounded-lg disabled:opacity-40">Previous</button>
               <button onClick={() => fetchCustomers(page + 1)} disabled={page >= totalPages} className="px-3 py-1.5 text-xs border border-gray-200 rounded-lg disabled:opacity-40">Next</button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* ── Mobile card list ── */}
+      <div className="sm:hidden space-y-3">
+        {loading ? (
+          Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="bg-white rounded-2xl border border-gray-100 p-4 space-y-2 animate-pulse">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-gray-100 rounded-full flex-shrink-0" />
+                <div className="flex-1 space-y-2">
+                  <div className="h-3.5 bg-gray-100 rounded w-1/2" />
+                  <div className="h-3 bg-gray-100 rounded w-3/4" />
+                </div>
+              </div>
+            </div>
+          ))
+        ) : customers.length === 0 ? (
+          <div className="text-center py-12 text-gray-400 text-sm bg-white rounded-2xl border border-gray-100">No customers found</div>
+        ) : (
+          customers.map((customer) => (
+            <div key={customer._id} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-10 h-10 bg-rose-100 rounded-full flex items-center justify-center text-rose-500 font-bold text-sm flex-shrink-0">
+                  {customer.name.charAt(0).toUpperCase()}
+                </div>
+                <div className="min-w-0">
+                  <p className="font-semibold text-gray-800 text-sm truncate">{customer.name}</p>
+                  <p className="text-xs text-gray-400">
+                    Joined {new Date(customer.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                  </p>
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <div className="flex items-center gap-2 text-xs text-gray-500">
+                  <span className="text-gray-400 w-14 flex-shrink-0">Email</span>
+                  <span className="truncate font-medium text-gray-700">{customer.email}</span>
+                </div>
+                <div className="flex items-center gap-2 text-xs text-gray-500">
+                  <span className="text-gray-400 w-14 flex-shrink-0">Phone</span>
+                  <span className="font-medium text-gray-700">{customer.phone || '—'}</span>
+                </div>
+                <div className="flex items-center gap-2 text-xs text-gray-500">
+                  <span className="text-gray-400 w-14 flex-shrink-0">Addresses</span>
+                  <span className="font-medium text-gray-700">{customer.addresses?.length || 0} saved</span>
+                </div>
+              </div>
+            </div>
+          ))
+        )}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between pt-2">
+            <span className="text-xs text-gray-500">Page {page} of {totalPages}</span>
+            <div className="flex gap-2">
+              <button onClick={() => fetchCustomers(page - 1)} disabled={page === 1} className="px-3 py-1.5 text-xs border border-gray-200 rounded-lg disabled:opacity-40 bg-white">Previous</button>
+              <button onClick={() => fetchCustomers(page + 1)} disabled={page >= totalPages} className="px-3 py-1.5 text-xs border border-gray-200 rounded-lg disabled:opacity-40 bg-white">Next</button>
             </div>
           </div>
         )}

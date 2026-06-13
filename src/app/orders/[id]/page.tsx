@@ -4,7 +4,7 @@ import { useParams } from 'next/navigation';
 import axios from 'axios';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { ChatBubbleLeftEllipsisIcon, MapPinIcon, CreditCardIcon, CheckIcon, PencilSquareIcon, XMarkIcon, TruckIcon, ArrowTopRightOnSquareIcon } from '@heroicons/react/24/outline';
+import { ChatBubbleLeftEllipsisIcon, MapPinIcon, CreditCardIcon, CheckIcon, PencilSquareIcon, XMarkIcon, TruckIcon, ArrowTopRightOnSquareIcon, ChevronLeftIcon } from '@heroicons/react/24/outline';
 import { getCourierTrackUrl, getCourierName } from '@/lib/couriers';
 
 const STATUS_STEPS = ['pending', 'confirmed', 'processing', 'shipped', 'delivered'];
@@ -130,62 +130,67 @@ export default function OrderDetailPage() {
       transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
     >
       {/* Header */}
-      <motion.div
-        className="flex items-center gap-3 mb-8 flex-wrap"
-        variants={stagger}
-        initial="hidden"
-        animate="show"
-      >
-        <motion.div variants={fadeUp} transition={{ duration: 0.35 }}>
-          <Link href="/orders" className="flex items-center gap-1 text-rose-400 text-sm hover:text-rose-500 font-medium transition-colors">
-            <span>←</span> My Orders
-          </Link>
-        </motion.div>
-        <motion.span variants={fadeUp} transition={{ duration: 0.35 }} className="text-gray-300">/</motion.span>
-        <motion.h1 variants={fadeUp} transition={{ duration: 0.35 }} className="text-2xl font-bold text-gray-900">
-          Order #{id.slice(-8).toUpperCase()}
-        </motion.h1>
-        <motion.span
-          variants={fadeUp}
-          transition={{ duration: 0.35 }}
-          className={`text-xs font-semibold px-3 py-1 rounded-full capitalize ml-auto ${STATUS_COLORS[order.status] || 'bg-gray-100 text-gray-600'}`}
-          initial={{ opacity: 0, scale: 0.8 }}
-          animate={{ opacity: 1, scale: 1 }}
+      <motion.div className="mb-6" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }}>
+        {/* Back button row */}
+        <Link
+          href="/orders"
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 mb-4 rounded-xl bg-gray-100 hover:bg-rose-50 hover:text-rose-500 text-gray-500 text-sm font-medium transition-all group"
         >
-          {order.status}
-        </motion.span>
+          <ChevronLeftIcon className="w-4 h-4 transition-transform group-hover:-translate-x-0.5" />
+          My Orders
+        </Link>
+
+        {/* Order title + status */}
+        <div className="flex items-start justify-between gap-3 flex-wrap">
+          <div>
+            <p className="text-xs text-gray-400 mb-0.5 font-mono">
+              {new Date(order.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}
+            </p>
+            <h1 className="text-xl sm:text-2xl font-bold text-gray-900">
+              Order #{id.slice(-8).toUpperCase()}
+            </h1>
+          </div>
+          <motion.span
+            className={`text-xs font-semibold px-3 py-1.5 rounded-full capitalize flex-shrink-0 ${STATUS_COLORS[order.status] || 'bg-gray-100 text-gray-600'}`}
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.15, duration: 0.3 }}
+          >
+            {order.status}
+          </motion.span>
+        </div>
       </motion.div>
 
       {/* Progress tracker */}
       {order.status !== 'cancelled' && (
         <motion.div
-          className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 mb-6"
+          className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 sm:p-6 mb-6"
           initial={{ opacity: 0, y: 18 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.45, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
         >
-          <h3 className="font-semibold text-gray-700 mb-6 text-sm uppercase tracking-wide">Order Progress</h3>
+          <h3 className="font-semibold text-gray-700 mb-4 text-sm uppercase tracking-wide">Order Progress</h3>
           <div className="flex items-center">
             {STATUS_STEPS.map((step, i) => (
               <div key={step} className="flex items-center flex-1 last:flex-none">
-                <div className={`flex flex-col items-center gap-1.5 ${i <= currentStep ? 'opacity-100' : 'opacity-35'}`}>
+                <div className={`flex flex-col items-center gap-1 ${i <= currentStep ? 'opacity-100' : 'opacity-35'}`}>
                   <motion.div
-                    className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${
+                    className={`w-6 h-6 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-[10px] sm:text-xs font-bold ${
                       i < currentStep  ? 'bg-emerald-400 text-white' :
-                      i === currentStep ? 'bg-rose-400 text-white ring-4 ring-rose-100' :
+                      i === currentStep ? 'bg-rose-400 text-white ring-2 sm:ring-4 ring-rose-100' :
                       'bg-gray-200 text-gray-500'
                     }`}
                     initial={{ scale: 0.6, opacity: 0 }}
                     animate={{ scale: 1, opacity: i <= currentStep ? 1 : 0.35 }}
                     transition={{ delay: 0.15 + i * 0.08, duration: 0.4, ease: [0.34, 1.56, 0.64, 1] }}
                   >
-                    {i < currentStep ? <CheckIcon className="w-4 h-4" /> : i + 1}
+                    {i < currentStep ? <CheckIcon className="w-3 h-3 sm:w-4 sm:h-4" /> : i + 1}
                   </motion.div>
-                  <span className="text-xs capitalize font-medium text-gray-600 text-center w-16 leading-tight">{step}</span>
+                  <span className="text-[9px] sm:text-xs capitalize font-medium text-gray-600 text-center w-10 sm:w-16 leading-tight">{step}</span>
                 </div>
                 {i < STATUS_STEPS.length - 1 && (
                   <motion.div
-                    className="flex-1 h-0.5 mx-1 -mt-5 bg-gray-200 relative overflow-hidden rounded-full"
+                    className="flex-1 h-0.5 mx-0.5 sm:mx-1 -mt-4 sm:-mt-5 bg-gray-200 relative overflow-hidden rounded-full"
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ delay: 0.2 + i * 0.08 }}

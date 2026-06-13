@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
+import { ChevronLeftIcon } from '@heroicons/react/24/outline';
 
 interface Order {
   _id: string;
@@ -53,7 +54,19 @@ export default function OrdersPage() {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
     >
-      <h1 className="text-3xl font-bold text-gray-900 font-serif mb-8">My Orders</h1>
+      {/* Header with back button */}
+      <div className="flex items-center gap-3 mb-6">
+        <button
+          type="button"
+          onClick={() => router.back()}
+          className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-gray-100 hover:bg-rose-50 hover:text-rose-500 text-gray-500 text-sm font-medium transition-all group"
+          aria-label="Go back"
+        >
+          <ChevronLeftIcon className="w-4 h-4 transition-transform group-hover:-translate-x-0.5" />
+          <span className="hidden sm:inline">Back</span>
+        </button>
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 font-serif">My Orders</h1>
+      </div>
 
       {orders.length === 0 ? (
         <motion.div

@@ -605,8 +605,8 @@ export default function AdminProductsPage() {
         </div>
       )}
 
-      {/* Products table */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+      {/* ── Desktop table ── */}
+      <div className="hidden sm:block bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="bg-gray-50 border-b border-gray-100">
@@ -634,25 +634,17 @@ export default function AdminProductsPage() {
                 <tr key={p._id} className="hover:bg-gray-50 transition-colors">
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-3">
-                      <img
-                        src={p.images[0] || 'https://via.placeholder.com/40'}
-                        alt={p.name}
-                        className="w-10 h-12 object-cover rounded-xl"
-                      />
+                      <img src={p.images[0] || 'https://via.placeholder.com/40'} alt={p.name} className="w-10 h-12 object-cover rounded-xl" />
                       <span className="font-medium text-gray-800 line-clamp-1 max-w-[160px]">{p.name}</span>
                     </div>
                   </td>
                   <td className="px-4 py-3 capitalize text-gray-500">{p.category}</td>
                   <td className="px-4 py-3">
-                    <div>
-                      <span className="font-semibold text-gray-800">₹{(p.discountPrice || p.price).toLocaleString()}</span>
-                      {p.discountPrice && <span className="text-xs text-gray-400 line-through ml-1">₹{p.price}</span>}
-                    </div>
+                    <span className="font-semibold text-gray-800">₹{(p.discountPrice || p.price).toLocaleString()}</span>
+                    {p.discountPrice && <span className="text-xs text-gray-400 line-through ml-1">₹{p.price}</span>}
                   </td>
                   <td className="px-4 py-3">
-                    <span className={`font-medium ${p.stock > 10 ? 'text-emerald-600' : p.stock > 0 ? 'text-amber-600' : 'text-red-500'}`}>
-                      {p.stock}
-                    </span>
+                    <span className={`font-medium ${p.stock > 10 ? 'text-emerald-600' : p.stock > 0 ? 'text-amber-600' : 'text-red-500'}`}>{p.stock}</span>
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex flex-wrap gap-1">
@@ -663,20 +655,10 @@ export default function AdminProductsPage() {
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex items-center justify-end gap-2">
-                      <button
-                        type="button"
-                        onClick={() => handleEdit(p)}
-                        className="p-1.5 text-gray-500 hover:text-rose-400 hover:bg-rose-50 rounded-lg transition-colors"
-                      >
+                      <button type="button" onClick={() => handleEdit(p)} className="p-1.5 text-gray-500 hover:text-rose-400 hover:bg-rose-50 rounded-lg transition-colors">
                         <PencilIcon className="w-4 h-4" />
                       </button>
-                      <motion.button
-                        type="button"
-                        onClick={() => setDeleteModal(p)}
-                        className="p-1.5 text-gray-500 hover:text-red-400 hover:bg-red-50 rounded-lg transition-colors"
-                        whileHover={{ scale: 1.15 }}
-                        whileTap={{ scale: 0.88 }}
-                      >
+                      <motion.button type="button" onClick={() => setDeleteModal(p)} className="p-1.5 text-gray-500 hover:text-red-400 hover:bg-red-50 rounded-lg transition-colors" whileHover={{ scale: 1.15 }} whileTap={{ scale: 0.88 }}>
                         <TrashIcon className="w-4 h-4" />
                       </motion.button>
                     </div>
@@ -686,13 +668,75 @@ export default function AdminProductsPage() {
             </tbody>
           </table>
         </div>
-
         {totalPages > 1 && (
           <div className="flex items-center justify-between px-4 py-3 border-t border-gray-100">
             <span className="text-xs text-gray-500">Page {page} of {totalPages}</span>
             <div className="flex gap-2">
               <button type="button" onClick={() => fetchProducts(page - 1)} disabled={page === 1} className="px-3 py-1.5 text-xs border border-gray-200 rounded-lg disabled:opacity-40 hover:bg-gray-50">Previous</button>
               <button type="button" onClick={() => fetchProducts(page + 1)} disabled={page >= totalPages} className="px-3 py-1.5 text-xs border border-gray-200 rounded-lg disabled:opacity-40 hover:bg-gray-50">Next</button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* ── Mobile card list ── */}
+      <div className="sm:hidden space-y-3">
+        {loading ? (
+          Array.from({ length: 5 }).map((_, i) => (
+            <div key={i} className="bg-white rounded-2xl border border-gray-100 p-4 space-y-3 animate-pulse">
+              <div className="flex gap-3">
+                <div className="w-14 h-16 bg-gray-100 rounded-xl flex-shrink-0" />
+                <div className="flex-1 space-y-2 pt-1">
+                  <div className="h-3.5 bg-gray-100 rounded w-3/4" />
+                  <div className="h-3 bg-gray-100 rounded w-1/2" />
+                  <div className="h-3 bg-gray-100 rounded w-1/3" />
+                </div>
+              </div>
+            </div>
+          ))
+        ) : products.length === 0 ? (
+          <div className="text-center py-12 text-gray-400 text-sm bg-white rounded-2xl border border-gray-100">No products found</div>
+        ) : (
+          products.map((p) => (
+            <div key={p._id} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
+              <div className="flex gap-3">
+                <img src={p.images[0] || 'https://via.placeholder.com/56'} alt={p.name} className="w-14 h-16 object-cover rounded-xl flex-shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold text-gray-800 text-sm leading-snug line-clamp-2">{p.name}</p>
+                  <p className="text-xs text-gray-400 capitalize mt-0.5">{p.category}</p>
+                  <div className="flex items-center gap-1.5 mt-1.5">
+                    <span className="font-bold text-gray-900 text-sm">₹{(p.discountPrice || p.price).toLocaleString()}</span>
+                    {p.discountPrice && <span className="text-xs text-gray-400 line-through">₹{p.price}</span>}
+                  </div>
+                </div>
+              </div>
+              <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-50">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${p.stock > 10 ? 'bg-emerald-50 text-emerald-600' : p.stock > 0 ? 'bg-amber-50 text-amber-600' : 'bg-red-50 text-red-500'}`}>
+                    Stock: {p.stock}
+                  </span>
+                  {p.isActive && <span className="text-xs bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded-full">Active</span>}
+                  {p.isTrending && <span className="text-xs bg-rose-100 text-rose-700 px-1.5 py-0.5 rounded-full">Trending</span>}
+                  {p.isNewProduct && <span className="text-xs bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded-full">New</span>}
+                </div>
+                <div className="flex items-center gap-1 flex-shrink-0">
+                  <button type="button" title="Edit product" onClick={() => handleEdit(p)} className="p-2 text-gray-400 hover:text-rose-400 hover:bg-rose-50 rounded-xl transition-colors">
+                    <PencilIcon className="w-4 h-4" />
+                  </button>
+                  <button type="button" title="Delete product" onClick={() => setDeleteModal(p)} className="p-2 text-gray-400 hover:text-red-400 hover:bg-red-50 rounded-xl transition-colors">
+                    <TrashIcon className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))
+        )}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between pt-2">
+            <span className="text-xs text-gray-500">Page {page} of {totalPages}</span>
+            <div className="flex gap-2">
+              <button type="button" onClick={() => fetchProducts(page - 1)} disabled={page === 1} className="px-3 py-1.5 text-xs border border-gray-200 rounded-lg disabled:opacity-40 bg-white">Previous</button>
+              <button type="button" onClick={() => fetchProducts(page + 1)} disabled={page >= totalPages} className="px-3 py-1.5 text-xs border border-gray-200 rounded-lg disabled:opacity-40 bg-white">Next</button>
             </div>
           </div>
         )}

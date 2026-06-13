@@ -320,7 +320,10 @@ function ProfileContent() {
             <button
               key={t.key}
               type="button"
-              onClick={() => setActiveTab(t.key)}
+              onClick={() => {
+                setActiveTab(t.key);
+                router.replace(t.key === 'profile' ? '/profile' : `/profile?tab=${t.key}`, { scroll: false });
+              }}
               className={`flex-1 flex items-center justify-center gap-2 py-3 px-2 sm:px-4 text-xs sm:text-sm font-bold rounded-xl transition-all duration-300 ${
                 activeTab === t.key
                   ? 'bg-gradient-to-br from-rose-400 via-rose-500 to-pink-500 text-white shadow-lg shadow-rose-300/40 scale-[1.02]'
@@ -468,14 +471,14 @@ function ProfileContent() {
                     desc: `${addresses.length} saved`,
                     icon: <MapPinIcon className="w-5 h-5 text-rose-400" />,
                     color: 'from-rose-50 to-pink-50',
-                    action: () => setActiveTab('addresses'),
+                    action: () => { setActiveTab('addresses'); router.replace('/profile?tab=addresses', { scroll: false }); },
                   },
                   {
                     label: 'Wishlist',
                     desc: `${wishlistItems.length} items`,
                     icon: <HeartSolid className="w-5 h-5 text-rose-400" />,
                     color: 'from-pink-50 to-fuchsia-50',
-                    action: () => setActiveTab('favourites'),
+                    action: () => { setActiveTab('favourites'); router.replace('/profile?tab=favourites', { scroll: false }); },
                   },
                   {
                     label: 'My Orders',
