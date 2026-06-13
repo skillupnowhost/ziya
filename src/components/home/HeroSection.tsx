@@ -89,7 +89,7 @@ export default function HeroSection() {
               <div className="hero-image-wrapper relative w-full shadow-2xl shadow-rose-300/40">
                 <img
                   src="/homepage-image.jpg"
-                  alt="Korean Fashion"
+                  alt="Korean fashion dresses collection – Ziyakart, Chennai Tamil Nadu"
                   className="hero-image relative w-full"
                 />
                 <div className="hero-cloud-overlay absolute inset-0 pointer-events-none" />

@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import Script from 'next/script';
 import { supabase, mapRow } from '@/lib/supabase';
 import ProductDetailClient from './ProductDetailClient';
 
@@ -56,6 +57,66 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
-export default function ProductDetailPage() {
-  return <ProductDetailClient />;
+export default async function ProductDetailPage({ params }: Props) {
+  const { id } = await params;
+
+  const { data: row } = await supabase
+    .from('products')
+    .select('name, description, images, price, discount_price, category, rating, review_count, stock')
+    .eq('id', id)
+    .maybeSingle();
+
+  const product = row ? (mapRow(row) as {
+    name: string;
+    description?: string;
+    images?: string[];
+    price: number;
+    discountPrice?: number;
+    category?: string;
+    rating?: number;
+    reviewCount?: number;
+    stock?: number;
+  }) : null;
+
+  const productJsonLd = product ? {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    name: product.name,
+    description: product.description ?? `Authentic Korean ${product.category ?? 'fashion'} from Ziyakart – delivered across India.`,
+    image: product.images ?? [],
+    brand: { "@type": "Brand", name: "Ziyakart" },
+    offers: {
+      "@type": "Offer",
+      url: `${BASE_URL}/products/${id}`,
+      priceCurrency: "INR",
+      price: product.discountPrice ?? product.price,
+      priceValidUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      availability: (product.stock ?? 1) > 0
+        ? "https://schema.org/InStock"
+        : "https://schema.org/OutOfStock",
+      seller: { "@type": "Organization", name: "Ziyakart" },
+    },
+    ...(product.rating && product.reviewCount ? {
+      aggregateRating: {
+        "@type": "AggregateRating",
+        ratingValue: product.rating,
+        reviewCount: product.reviewCount,
+        bestRating: 5,
+        worstRating: 1,
+      },
+    } : {}),
+  } : null;
+
+  return (
+    <>
+      {productJsonLd && (
+        <Script
+          id="product-jsonld"
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(productJsonLd) }}
+        />
+      )}
+      <ProductDetailClient />
+    </>
+  );
 }

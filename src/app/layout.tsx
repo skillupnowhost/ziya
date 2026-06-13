@@ -26,16 +26,22 @@ export const metadata: Metadata = {
     "ziyakart",
     "ziya kart",
     "ziyakart korean series",
-    "korean accessories tamil",
+    "korean dresses chennai",
+    "korean dresses tamil nadu",
+    "korean fashion chennai",
+    "korean fashion tamil nadu",
     "korean accessories chennai",
+    "korean accessories tamil",
     "korean fashion india",
     "k-beauty india",
     "korean stationery",
     "korean series accessories",
     "ziya fashion closet",
-    "korean fashion chennai",
     "korean products india",
     "k-fashion tamil nadu",
+    "indo korean fashion",
+    "buy korean clothes india",
+    "korean dress online india",
   ],
   authors: [{ name: "Ziyakart", url: BASE_URL }],
   creator: "Ziyakart",
@@ -97,7 +103,39 @@ const organizationJsonLd = {
     contactType: "customer service",
     availableLanguage: ["English", "Tamil"],
   },
-  sameAs: [],
+  sameAs: [
+    "https://www.instagram.com/ziya.thefashioncloset",
+    "https://wa.me/919003828556",
+  ],
+};
+
+const localBusinessJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "LocalBusiness",
+  name: "Ziyakart – Korean Fashion",
+  image: `${BASE_URL}/ziya-logo.png`,
+  url: BASE_URL,
+  telephone: "+91-9003828556",
+  email: "ziyasupport@gmail.com",
+  address: {
+    "@type": "PostalAddress",
+    addressLocality: "Chennai",
+    addressRegion: "Tamil Nadu",
+    postalCode: "600000",
+    addressCountry: "IN",
+  },
+  geo: {
+    "@type": "GeoCoordinates",
+    latitude: 13.0827,
+    longitude: 80.2707,
+  },
+  openingHoursSpecification: [
+    { "@type": "OpeningHoursSpecification", dayOfWeek: ["Monday","Tuesday","Wednesday","Thursday","Friday"], opens: "10:00", closes: "18:00" },
+    { "@type": "OpeningHoursSpecification", dayOfWeek: ["Saturday"], opens: "10:00", closes: "14:00" },
+  ],
+  priceRange: "₹₹",
+  servesCuisine: undefined,
+  description: "Authentic Korean fashion, dresses, accessories and K-beauty delivered across India. Based in Chennai, Tamil Nadu.",
 };
 
 const websiteJsonLd = {
@@ -128,6 +166,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           id="website-jsonld"
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd) }}
+        />
+        <Script
+          id="localbusiness-jsonld"
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(localBusinessJsonLd) }}
         />
       </head>
       <body className="min-h-full flex flex-col antialiased">
