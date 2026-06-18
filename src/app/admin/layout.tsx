@@ -15,6 +15,7 @@ import {
   XMarkIcon,
   ClipboardDocumentListIcon,
   ArrowLeftIcon,
+  Cog6ToothIcon,
 } from '@heroicons/react/24/outline';
 
 const navItems = [
@@ -24,6 +25,7 @@ const navItems = [
   { label: 'Customers', href: '/admin/customers', icon: UsersIcon },
   { label: 'Promo Codes', href: '/admin/promo-codes', icon: TagIcon },
   { label: 'Coupon Logs', href: '/admin/coupon-logs', icon: ClipboardDocumentListIcon },
+  { label: 'Settings', href: '/admin/settings', icon: Cog6ToothIcon },
 ];
 
 function getInitials(name?: string) {

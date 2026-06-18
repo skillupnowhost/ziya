@@ -11,6 +11,8 @@ import {
   PhoneIcon,
   CurrencyRupeeIcon,
   MagnifyingGlassIcon,
+  DocumentArrowDownIcon,
+  ArrowDownTrayIcon,
 } from '@heroicons/react/24/outline';
 import {
   ExclamationTriangleIcon,
@@ -18,13 +20,16 @@ import {
   CheckCircleIcon,
 } from '@heroicons/react/24/solid';
 import { COURIER_OPTIONS, getCourierName } from '@/lib/couriers';
+import { downloadInvoicePDF } from '@/lib/generateInvoicePDF';
 
 interface Order {
   _id: string;
   userId: string;
-  items: { name: string; quantity: number; price: number; size?: string }[];
+  items: { name: string; quantity: number; price: number; size?: string; color?: string }[];
   total: number;
   subtotal: number;
+  shippingCost: number;
+  discount: number;
   status: string;
   paymentStatus: string;
   paymentMethod: string;
@@ -32,6 +37,8 @@ interface Order {
     name?: string;
     phone?: string;
     street?: string;
+    doorNumber?: string;
+    streetName?: string;
     city?: string;
     state?: string;
     pincode?: string;
@@ -417,6 +424,18 @@ function OrderCard({
               Mark Paid
             </motion.button>
           )}
+          {!order.trackingNumber && order.status !== 'cancelled' && order.status !== 'delivered' && (
+            <motion.button
+              onClick={() => onStatusChange(order, 'shipped')}
+              className="flex items-center gap-1 px-3 py-1.5 bg-indigo-500 text-white text-xs font-bold rounded-lg shadow-sm shadow-indigo-200"
+              whileHover={{ scale: 1.04 }}
+              whileTap={{ scale: 0.95 }}
+              title="Create shipment"
+            >
+              <TruckIcon className="w-3.5 h-3.5" />
+              Ship
+            </motion.button>
+          )}
           <select
             value={order.status}
             title="Update order status"
@@ -428,6 +447,26 @@ function OrderCard({
             ))}
           </select>
         </div>
+      </div>
+
+      {/* Quick actions: Invoice */}
+      <div className="flex gap-2">
+        <button
+          type="button"
+          onClick={() => downloadInvoicePDF(order)}
+          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-rose-500 bg-rose-50 hover:bg-rose-100 rounded-lg transition-colors"
+        >
+          <ArrowDownTrayIcon className="w-3.5 h-3.5" />
+          Download PDF
+        </button>
+        <button
+          type="button"
+          onClick={() => window.open(`/api/orders/${order._id}/invoice`, '_blank')}
+          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-500 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors"
+        >
+          <DocumentArrowDownIcon className="w-3.5 h-3.5" />
+          View
+        </button>
       </div>
 
       {order.trackingNumber && (
@@ -765,6 +804,28 @@ export default function AdminOrdersPage() {
                                 Paid
                               </motion.button>
                             )}
+                            {!order.trackingNumber && order.status !== 'cancelled' && order.status !== 'delivered' && (
+                              <motion.button
+                                onClick={() => onStatusChange(order, 'shipped')}
+                                className="flex items-center gap-1 px-2 py-1 bg-indigo-500 text-white text-[10px] font-bold rounded-lg shadow-sm shadow-indigo-100 whitespace-nowrap"
+                                title="Create Shipment"
+                                whileHover={{ scale: 1.06 }}
+                                whileTap={{ scale: 0.92 }}
+                              >
+                                <TruckIcon className="w-3 h-3" />
+                                Ship
+                              </motion.button>
+                            )}
+                            <motion.button
+                              onClick={() => downloadInvoicePDF(order)}
+                              className="flex items-center gap-1 px-2 py-1 text-rose-500 bg-rose-50 hover:bg-rose-100 text-[10px] font-bold rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-all"
+                              title="Download Invoice PDF"
+                              whileHover={{ scale: 1.06 }}
+                              whileTap={{ scale: 0.92 }}
+                            >
+                              <ArrowDownTrayIcon className="w-3 h-3" />
+                              PDF
+                            </motion.button>
                             <motion.button
                               onClick={() => setDeleteModal(order)}
                               className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors opacity-0 group-hover:opacity-100"

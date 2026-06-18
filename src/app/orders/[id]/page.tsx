@@ -4,8 +4,9 @@ import { useParams } from 'next/navigation';
 import axios from 'axios';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { ChatBubbleLeftEllipsisIcon, MapPinIcon, CreditCardIcon, CheckIcon, PencilSquareIcon, XMarkIcon, TruckIcon, ArrowTopRightOnSquareIcon, ChevronLeftIcon } from '@heroicons/react/24/outline';
+import { ChatBubbleLeftEllipsisIcon, MapPinIcon, CreditCardIcon, CheckIcon, PencilSquareIcon, XMarkIcon, TruckIcon, ArrowTopRightOnSquareIcon, ChevronLeftIcon, DocumentArrowDownIcon, ArrowDownTrayIcon } from '@heroicons/react/24/outline';
 import { getCourierTrackUrl, getCourierName } from '@/lib/couriers';
+import { downloadInvoicePDF } from '@/lib/generateInvoicePDF';
 
 const STATUS_STEPS = ['pending', 'confirmed', 'processing', 'shipped', 'delivered'];
 const STATUS_COLORS: Record<string, string> = {
@@ -402,10 +403,76 @@ export default function OrderDetailPage() {
             </div>
           </motion.div>
 
+          {/* Invoice Download */}
+          <motion.div
+            className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5"
+            variants={fadeUp}
+            transition={{ duration: 0.4, delay: 0.32, ease: [0.22, 1, 0.36, 1] }}
+          >
+            <div className="flex items-center gap-2 mb-3">
+              <DocumentArrowDownIcon className="w-4 h-4 text-rose-400" />
+              <h3 className="font-semibold text-gray-800 text-sm">Invoice</h3>
+            </div>
+            <p className="text-xs text-gray-500 mb-3">Download or print your order invoice</p>
+            <div className="flex flex-col gap-2">
+              <button
+                type="button"
+                onClick={() => downloadInvoicePDF(order)}
+                className="w-full flex items-center justify-center gap-2 py-2.5 bg-gradient-to-r from-rose-400 to-pink-500 text-white text-xs font-bold rounded-xl shadow-sm shadow-rose-200 hover:from-rose-500 hover:to-pink-600 transition-all"
+              >
+                <ArrowDownTrayIcon className="w-3.5 h-3.5" />
+                Download PDF
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const win = window.open(`/api/orders/${id}/invoice`, '_blank');
+                  if (win) win.focus();
+                }}
+                className="w-full flex items-center justify-center gap-2 py-2 text-gray-500 text-xs font-medium border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors"
+              >
+                <DocumentArrowDownIcon className="w-3.5 h-3.5" />
+                View in Browser
+              </button>
+            </div>
+          </motion.div>
+
+          {/* Shipment Info */}
+          {(order.status === 'shipped' || order.status === 'delivered') && order.trackingNumber && (
+            <motion.div
+              className="bg-gradient-to-br from-indigo-50 to-violet-50 rounded-2xl border border-indigo-100 shadow-sm p-5"
+              variants={fadeUp}
+              transition={{ duration: 0.4, delay: 0.36, ease: [0.22, 1, 0.36, 1] }}
+            >
+              <div className="flex items-center gap-2 mb-3">
+                <TruckIcon className="w-4 h-4 text-indigo-500" />
+                <h3 className="font-semibold text-gray-800 text-sm">Shipment Details</h3>
+              </div>
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-gray-500 text-xs">Status</span>
+                  <span className={`text-xs font-bold px-2 py-0.5 rounded-full capitalize ${
+                    order.status === 'delivered' ? 'bg-emerald-100 text-emerald-700' : 'bg-indigo-100 text-indigo-700'
+                  }`}>
+                    {order.status === 'delivered' ? 'Delivered' : 'In Transit'}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-500 text-xs">Courier</span>
+                  <span className="font-medium text-gray-800 text-xs">{getCourierName(order.courierService)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-500 text-xs">Tracking #</span>
+                  <span className="font-mono font-medium text-indigo-600 text-xs">{order.trackingNumber}</span>
+                </div>
+              </div>
+            </motion.div>
+          )}
+
           <motion.p
             className="text-xs text-gray-400 text-center"
             variants={fadeUp}
-            transition={{ duration: 0.35, delay: 0.32 }}
+            transition={{ duration: 0.35, delay: 0.38 }}
           >
             Ordered on {new Date(order.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}
           </motion.p>
