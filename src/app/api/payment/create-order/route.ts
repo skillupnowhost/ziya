@@ -17,12 +17,14 @@ export async function POST(req: NextRequest) {
     const razorpayOrder = await razorpay.orders.create({
       amount: Math.round(amount * 100),
       currency,
-      receipt: `order_${orderId}`,
+      receipt: `ord_${String(orderId).slice(0, 36)}`,
     });
 
     return NextResponse.json({ razorpayOrder });
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Razorpay create order error:', error);
-    return NextResponse.json({ error: 'Payment initialization failed' }, { status: 500 });
+    const detail =
+      error instanceof Error ? error.message : 'Payment initialization failed';
+    return NextResponse.json({ error: detail }, { status: 500 });
   }
 }
