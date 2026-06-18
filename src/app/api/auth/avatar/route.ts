@@ -2,17 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabase, mapRow } from '@/lib/supabase';
 import { getUserFromRequest } from '@/lib/auth';
 
-const cloudinaryConfigured =
-  process.env.CLOUDINARY_CLOUD_NAME &&
-  process.env.CLOUDINARY_CLOUD_NAME !== 'your_cloudinary_cloud_name';
-
-async function uploadToCloudinary(file: File): Promise<string> {
-  const { uploadImage } = await import('@/lib/cloudinary');
-  const bytes = await file.arrayBuffer();
-  const buffer = Buffer.from(bytes);
-  return uploadImage(buffer, 'ziya/avatars');
-}
-
 async function saveLocalAvatar(file: File, userId: string): Promise<string> {
   const { default: path } = await import('path');
   const { default: fs } = await import('fs/promises');
@@ -44,9 +33,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'File too large. Max 5MB.' }, { status: 400 });
     }
 
-    const avatarUrl = cloudinaryConfigured
-      ? await uploadToCloudinary(file)
-      : await saveLocalAvatar(file, payload.id as string);
+    const avatarUrl = await saveLocalAvatar(file, payload.id as string);
 
     const { data: row, error } = await supabase
       .from('users')

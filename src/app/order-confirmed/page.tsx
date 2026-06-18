@@ -4,7 +4,7 @@ import { useSearchParams } from 'next/navigation';
 import axios from 'axios';
 import Link from 'next/link';
 import { CheckCircleIcon, ClockIcon } from '@heroicons/react/24/solid';
-import { PhoneIcon, ChatBubbleLeftRightIcon, TruckIcon } from '@heroicons/react/24/outline';
+import { TruckIcon, ShieldCheckIcon } from '@heroicons/react/24/outline';
 import { motion, type Variants } from 'framer-motion';
 import { EASE_SMOOTH } from '@/lib/easing';
 
@@ -29,7 +29,6 @@ interface Order {
   createdAt: string;
 }
 
-// Stagger helper for child variants
 const containerVariants = {
   hidden: {},
   show: {
@@ -49,6 +48,7 @@ const itemVariants: Variants = {
 function OrderConfirmedContent() {
   const searchParams = useSearchParams();
   const orderId = searchParams.get('orderId');
+  const isPaid = searchParams.get('paid') === '1';
   const [order, setOrder] = useState<Order | null>(null);
 
   useEffect(() => {
@@ -59,6 +59,8 @@ function OrderConfirmedContent() {
         .catch(console.error);
     }
   }, [orderId]);
+
+  const paymentDone = isPaid || order?.paymentStatus === 'paid';
 
   return (
     <div className="min-h-[90vh] flex items-center justify-center px-4 py-12">
@@ -77,7 +79,6 @@ function OrderConfirmedContent() {
         >
           <div className="relative">
             <CheckCircleIcon className="w-24 h-24 text-emerald-400" />
-            {/* Subtle pulse ring */}
             <motion.div
               className="absolute inset-0 rounded-full border-2 border-emerald-300"
               initial={{ scale: 1, opacity: 0.6 }}
@@ -90,41 +91,64 @@ function OrderConfirmedContent() {
         {/* ── Title ──────────────────────────────────────────── */}
         <motion.div variants={itemVariants} className="text-center mb-6">
           <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 font-serif mb-2">
-            Order Confirmed!
+            Order {paymentDone ? 'Confirmed' : 'Placed'}!
           </h1>
           <p className="text-gray-500 text-sm">
             Thank you for shopping with Ziya, {order?.shippingAddress?.name?.split(' ')[0] || 'valued customer'}.
           </p>
         </motion.div>
 
-        {/* ── Payment Pending banner ─────────────────────────── */}
+        {/* ── Payment Status Banner ─────────────────────────── */}
         <motion.div
           variants={itemVariants}
-          className="mb-5 rounded-2xl overflow-hidden border border-amber-200 shadow-sm"
+          className="mb-5 rounded-2xl overflow-hidden border shadow-sm"
+          style={{
+            borderColor: paymentDone ? '#bbf7d0' : '#fde68a',
+          }}
         >
-          {/* Top accent strip */}
-          <div className="h-1 bg-gradient-to-r from-amber-400 via-orange-400 to-amber-400" />
-          <div className="p-5 bg-gradient-to-br from-amber-50 to-orange-50">
+          <div
+            className="h-1"
+            style={{
+              background: paymentDone
+                ? 'linear-gradient(to right, #34d399, #10b981, #34d399)'
+                : 'linear-gradient(to right, #fbbf24, #f97316, #fbbf24)',
+            }}
+          />
+          <div className={`p-5 ${paymentDone ? 'bg-gradient-to-br from-emerald-50 to-green-50' : 'bg-gradient-to-br from-amber-50 to-orange-50'}`}>
             <div className="flex items-start gap-3">
-              <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center shrink-0">
-                <ClockIcon className="w-5 h-5 text-amber-500" />
+              <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${paymentDone ? 'bg-emerald-100' : 'bg-amber-100'}`}>
+                {paymentDone ? (
+                  <ShieldCheckIcon className="w-5 h-5 text-emerald-500" />
+                ) : (
+                  <ClockIcon className="w-5 h-5 text-amber-500" />
+                )}
               </div>
               <div>
-                <p className="font-bold text-amber-800 text-base mb-1">Payment Pending</p>
-                <p className="text-sm text-amber-700 leading-relaxed">
-                  Your order is confirmed. Payment is pending. We will contact you shortly to finalize payment details.
+                <p className={`font-bold text-base mb-1 ${paymentDone ? 'text-emerald-800' : 'text-amber-800'}`}>
+                  {paymentDone ? 'Payment Successful' : 'Payment Pending'}
+                </p>
+                <p className={`text-sm leading-relaxed ${paymentDone ? 'text-emerald-700' : 'text-amber-700'}`}>
+                  {paymentDone
+                    ? 'Your payment has been received. We\'ll start processing your order right away!'
+                    : 'Your order is placed. We will contact you shortly to finalize payment details.'}
                 </p>
               </div>
             </div>
           </div>
         </motion.div>
 
-        {/* ── How it works steps ────────────────────────────── */}
+        {/* ── Progress steps ────────────────────────────────── */}
         <motion.div variants={itemVariants} className="mb-5">
           <div className="grid grid-cols-3 gap-3">
             {[
               { icon: <CheckCircleIcon className="w-5 h-5 text-emerald-500" />, label: 'Order Placed', done: true },
-              { icon: <ChatBubbleLeftRightIcon className="w-5 h-5 text-amber-400" />, label: 'We Contact You', done: false },
+              {
+                icon: paymentDone
+                  ? <CheckCircleIcon className="w-5 h-5 text-emerald-500" />
+                  : <ClockIcon className="w-5 h-5 text-amber-400" />,
+                label: paymentDone ? 'Payment Done' : 'Payment Pending',
+                done: paymentDone,
+              },
               { icon: <TruckIcon className="w-5 h-5 text-gray-300" />, label: 'Shipped', done: false },
             ].map((step, i) => (
               <div key={i} className="flex flex-col items-center gap-1.5 text-center">
@@ -132,7 +156,7 @@ function OrderConfirmedContent() {
                   className={`w-10 h-10 rounded-full flex items-center justify-center ${
                     step.done ? 'bg-emerald-50' : i === 1 ? 'bg-amber-50' : 'bg-gray-50'
                   }`}
-                  animate={i === 1 ? { scale: [1, 1.08, 1] } : {}}
+                  animate={!step.done && i === 1 ? { scale: [1, 1.08, 1] } : {}}
                   transition={{ duration: 1.5, repeat: Infinity, repeatDelay: 0.5 }}
                 >
                   {step.icon}
@@ -143,12 +167,11 @@ function OrderConfirmedContent() {
               </div>
             ))}
           </div>
-          {/* Connecting line */}
           <div className="relative -mt-8 mx-12 h-0.5 bg-gray-100 -z-10 pointer-events-none">
             <motion.div
               className="absolute left-0 top-0 h-full bg-emerald-200 rounded-full"
               initial={{ width: 0 }}
-              animate={{ width: '33%' }}
+              animate={{ width: paymentDone ? '66%' : '33%' }}
               transition={{ duration: 0.8, delay: 0.6 }}
             />
           </div>
@@ -172,9 +195,22 @@ function OrderConfirmedContent() {
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-gray-500">Payment Status</span>
-                <span className="flex items-center gap-1.5 font-semibold text-amber-600 text-xs">
-                  <ClockIcon className="w-3.5 h-3.5" />
-                  Pending
+                {paymentDone ? (
+                  <span className="flex items-center gap-1.5 font-semibold text-emerald-600 text-xs">
+                    <CheckCircleIcon className="w-3.5 h-3.5" />
+                    Paid
+                  </span>
+                ) : (
+                  <span className="flex items-center gap-1.5 font-semibold text-amber-600 text-xs">
+                    <ClockIcon className="w-3.5 h-3.5" />
+                    Pending
+                  </span>
+                )}
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-500">Payment Method</span>
+                <span className="font-medium text-gray-700 text-xs">
+                  {order.paymentMethod === 'razorpay' ? 'Online (Razorpay)' : order.paymentMethod === 'cod' ? 'Cash on Delivery' : 'Manual'}
                 </span>
               </div>
               <div className="flex justify-between text-sm">
@@ -189,7 +225,6 @@ function OrderConfirmedContent() {
               </div>
             </div>
 
-            {/* Items mini list */}
             {order.items?.length > 0 && (
               <div className="px-5 pb-4 border-t border-gray-50 pt-3">
                 <p className="text-xs text-gray-400 mb-2 font-medium">{order.items.length} item{order.items.length > 1 ? 's' : ''} ordered</p>
@@ -213,19 +248,6 @@ function OrderConfirmedContent() {
             )}
           </motion.div>
         )}
-
-        {/* ── Contact info ──────────────────────────────────── */}
-        <motion.div
-          variants={itemVariants}
-          className="flex items-center gap-3 p-4 bg-rose-50 rounded-2xl border border-rose-100 mb-6"
-        >
-          <PhoneIcon className="w-5 h-5 text-rose-400 shrink-0" />
-          <p className="text-xs text-rose-600 leading-relaxed">
-            Our team will reach out to you at{' '}
-            <span className="font-semibold">{order?.shippingAddress?.phone || 'your registered number'}</span>{' '}
-            via phone or WhatsApp to complete payment.
-          </p>
-        </motion.div>
 
         {/* ── Action buttons ────────────────────────────────── */}
         <motion.div variants={itemVariants} className="flex flex-col sm:flex-row gap-3">

@@ -1,10 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getUserFromRequest } from '@/lib/auth';
 
-const cloudinaryConfigured =
-  process.env.CLOUDINARY_CLOUD_NAME &&
-  process.env.CLOUDINARY_CLOUD_NAME !== 'your_cloudinary_cloud_name';
-
 const MAX_IMAGE_SIZE = 5 * 1024 * 1024;  // 5 MB
 const MAX_VIDEO_SIZE = 50 * 1024 * 1024; // 50 MB
 
@@ -51,16 +47,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    let url: string;
-
-    if (cloudinaryConfigured) {
-      const { uploadMedia } = await import('@/lib/cloudinary');
-      const bytes = await file.arrayBuffer();
-      const buffer = Buffer.from(bytes);
-      url = await uploadMedia(buffer, 'ziya/reviews', isVideo ? 'video' : 'image');
-    } else {
-      url = await saveLocalFile(file, isVideo ? 'review-videos' : 'review-images');
-    }
+    const url = await saveLocalFile(file, isVideo ? 'review-videos' : 'review-images');
 
     return NextResponse.json({ url, type: isVideo ? 'video' : 'image' });
   } catch (err) {

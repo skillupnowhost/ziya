@@ -28,17 +28,6 @@ async function saveLocalFile(file: File): Promise<string> {
   return `/uploads/products/${filename}`;
 }
 
-async function uploadToCloudinary(file: File): Promise<string> {
-  const { uploadImage } = await import('@/lib/cloudinary');
-  const bytes = await file.arrayBuffer();
-  const buffer = Buffer.from(bytes);
-  return uploadImage(buffer, 'ziya/products');
-}
-
-const cloudinaryConfigured =
-  process.env.CLOUDINARY_CLOUD_NAME &&
-  process.env.CLOUDINARY_CLOUD_NAME !== 'your_cloudinary_cloud_name';
-
 export async function POST(req: NextRequest) {
   try {
     const payload = getUserFromRequest(req);
@@ -53,14 +42,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'No files provided' }, { status: 400 });
     }
 
-    let urls: string[];
-
-    if (cloudinaryConfigured) {
-      urls = await Promise.all(files.map(uploadToCloudinary));
-    } else {
-      await ensureUploadDir();
-      urls = await Promise.all(files.map(saveLocalFile));
-    }
+    await ensureUploadDir();
+    const urls = await Promise.all(files.map(saveLocalFile));
 
     return NextResponse.json({ urls });
   } catch (error) {
