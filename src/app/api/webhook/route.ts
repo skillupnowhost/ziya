@@ -54,11 +54,34 @@ export async function POST(req: NextRequest) {
         .eq('id', order.id);
 
       const items = order.items as { productId: string; quantity: number }[];
+      const outOfStockProducts: string[] = [];
+
       for (const item of items) {
         await supabase.rpc('decrement_product_stock', {
           p_id: item.productId,
           amount: item.quantity,
         });
+
+        const { data: product } = await supabase
+          .from('products')
+          .select('id, name, stock')
+          .eq('id', item.productId)
+          .maybeSingle();
+
+        if (product && (product.stock as number) <= 0) {
+          outOfStockProducts.push(product.name as string);
+        }
+      }
+
+      if (outOfStockProducts.length > 0) {
+        await supabase.from('admin_notifications').insert(
+          outOfStockProducts.map((name) => ({
+            type: 'out_of_stock',
+            title: 'Product Out of Stock',
+            message: `"${name}" is now out of stock`,
+            is_read: false,
+          }))
+        );
       }
     }
 

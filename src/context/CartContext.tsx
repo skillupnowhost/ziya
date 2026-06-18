@@ -56,8 +56,11 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         icon: '🔒',
         duration: 3000,
       });
-      // Small delay so toast shows before navigation
       setTimeout(() => { window.location.href = '/auth/login'; }, 800);
+      return;
+    }
+    if (newItem.stock <= 0) {
+      toast.error('This product is out of stock');
       return;
     }
     setItems((prev) => {

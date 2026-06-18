@@ -20,7 +20,22 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    return NextResponse.json({ order: mapRow(row) });
+    const order = mapRow(row);
+
+    // Attach user email for invoice display
+    const { data: userRow } = await supabase
+      .from('users')
+      .select('email, name, phone')
+      .eq('id', row.user_id)
+      .maybeSingle();
+
+    if (userRow) {
+      order.userEmail = userRow.email;
+      order.userName = userRow.name;
+      order.userPhone = userRow.phone;
+    }
+
+    return NextResponse.json({ order });
   } catch {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }

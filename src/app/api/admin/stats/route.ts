@@ -16,6 +16,7 @@ export async function GET(req: NextRequest) {
       { data: revenueRows },
       { data: recentRows },
       { data: statusRows },
+      { count: outOfStockCount },
     ] = await Promise.all([
       supabase.from('orders').select('id', { count: 'exact', head: true }),
       supabase.from('users').select('id', { count: 'exact', head: true }).eq('role', 'user'),
@@ -23,6 +24,7 @@ export async function GET(req: NextRequest) {
       supabase.from('orders').select('total').eq('payment_status', 'paid'),
       supabase.from('orders').select('*').order('created_at', { ascending: false }).limit(5),
       supabase.from('orders').select('status'),
+      supabase.from('products').select('id', { count: 'exact', head: true }).eq('is_active', true).lte('stock', 0),
     ]);
 
     const totalRevenue = (revenueRows ?? []).reduce((sum, r) => sum + ((r.total as number) || 0), 0);
@@ -37,10 +39,11 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({
       stats: {
-        totalOrders:    totalOrders  ?? 0,
-        totalUsers:     totalUsers   ?? 0,
-        totalProducts:  totalProducts ?? 0,
+        totalOrders:       totalOrders  ?? 0,
+        totalUsers:        totalUsers   ?? 0,
+        totalProducts:     totalProducts ?? 0,
         totalRevenue,
+        outOfStockCount:   outOfStockCount ?? 0,
       },
       recentOrders:  mapRows(recentRows ?? []),
       ordersByStatus,

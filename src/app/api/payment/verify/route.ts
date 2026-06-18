@@ -35,13 +35,37 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Order not found' }, { status: 404 });
     }
 
-    // Deduct stock for each item
-    const items = orderRow.items as { productId: string; quantity: number }[];
+    // Deduct stock for each item and check for out-of-stock
+    const items = orderRow.items as { productId: string; quantity: number; name?: string }[];
+    const outOfStockProducts: string[] = [];
+
     for (const item of items) {
       await supabase.rpc('decrement_product_stock', {
         p_id: item.productId,
         amount: item.quantity,
       });
+
+      const { data: product } = await supabase
+        .from('products')
+        .select('id, name, stock')
+        .eq('id', item.productId)
+        .maybeSingle();
+
+      if (product && (product.stock as number) <= 0) {
+        outOfStockProducts.push(product.name as string);
+      }
+    }
+
+    // Notify admin about out-of-stock products
+    if (outOfStockProducts.length > 0) {
+      await supabase.from('admin_notifications').insert(
+        outOfStockProducts.map((name) => ({
+          type: 'out_of_stock',
+          title: 'Product Out of Stock',
+          message: `"${name}" is now out of stock after order #${orderId.slice(-8).toUpperCase()}`,
+          is_read: false,
+        }))
+      );
     }
 
     return NextResponse.json({ message: 'Payment verified', order: mapRow(orderRow) });

@@ -43,6 +43,8 @@ function CheckoutContent() {
   const [promoError, setPromoError] = useState('');
   const [loading, setLoading] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('razorpay');
+  const [codEnabled, setCodEnabled] = useState(true);
+  const [codLoading, setCodLoading] = useState(true);
   const orderPlaced = useRef(false);
   const [address, setAddress] = useState({
     name: '',
@@ -69,6 +71,19 @@ function CheckoutContent() {
     if (!user) router.push('/auth/login?redirect=/checkout');
     if (items.length === 0 && !orderPlaced.current) router.push('/cart');
   }, [user, items, router]);
+
+  useEffect(() => {
+    axios.get('/api/admin/settings')
+      .then((r) => {
+        const s = r.data.settings;
+        if (s.cod_enabled === false) {
+          setCodEnabled(false);
+          setPaymentMethod('razorpay');
+        }
+      })
+      .catch(() => {})
+      .finally(() => setCodLoading(false));
+  }, []);
 
   useEffect(() => {
     if (user?.name) setAddress((prev) => ({ ...prev, name: prev.name || user.name }));
@@ -109,59 +124,6 @@ function CheckoutContent() {
     setPromoError('');
   };
 
-  const openRazorpay = (razorpayOrderId: string, orderId: string, amount: number) => {
-    if (typeof window.Razorpay === 'undefined') {
-      toast.error('Payment gateway is loading. Please try again.');
-      setLoading(false);
-      return;
-    }
-
-    const options: RazorpayOptions = {
-      key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID!,
-      amount: Math.round(amount * 100),
-      currency: 'INR',
-      name: 'Ziyakart',
-      description: `Order #${orderId.slice(-8).toUpperCase()}`,
-      image: '/ziya-logo.png',
-      order_id: razorpayOrderId,
-      prefill: {
-        name: address.name,
-        email: user?.email,
-        contact: address.phone,
-      },
-      theme: { color: '#f43f5e' },
-      handler: async (response: RazorpayResponse) => {
-        try {
-          const verifyRes = await axios.post('/api/payment/verify', {
-            razorpay_order_id: response.razorpay_order_id,
-            razorpay_payment_id: response.razorpay_payment_id,
-            razorpay_signature: response.razorpay_signature,
-            orderId,
-          });
-
-          if (verifyRes.data.order) {
-            orderPlaced.current = true;
-            clearCart();
-            router.push(`/order-confirmed?orderId=${orderId}&paid=1`);
-          }
-        } catch {
-          toast.error('Payment verification failed. Contact support if amount was deducted.');
-        } finally {
-          setLoading(false);
-        }
-      },
-      modal: {
-        ondismiss: () => {
-          setLoading(false);
-          toast.error('Payment cancelled');
-        },
-      },
-    };
-
-    const rzp = new window.Razorpay(options);
-    rzp.open();
-  };
-
   const handlePlaceOrder = async () => {
     const missing = ADDRESS_FIELDS.some((f) => f.key !== 'landmark' && !address[f.key as keyof typeof address]);
     if (missing) {
@@ -186,13 +148,9 @@ function CheckoutContent() {
       const order = orderRes.data.order;
 
       if (paymentMethod === 'razorpay') {
-        const paymentRes = await axios.post('/api/payment/create-order', {
-          amount: order.total,
-          currency: 'INR',
-          orderId: order._id,
-        });
-
-        openRazorpay(paymentRes.data.razorpayOrder.id, order._id, order.total);
+        orderPlaced.current = true;
+        clearCart();
+        router.push(`/payment?orderId=${order._id}`);
       } else {
         orderPlaced.current = true;
         clearCart();
@@ -325,43 +283,60 @@ function CheckoutContent() {
               </label>
 
               {/* COD option */}
-              <label
-                className={`flex items-center gap-4 p-4 rounded-xl border-2 cursor-pointer transition-all ${
-                  paymentMethod === 'cod'
-                    ? 'border-rose-400 bg-rose-50/50 shadow-sm shadow-rose-100'
-                    : 'border-gray-100 hover:border-gray-200 bg-white'
-                }`}
-              >
-                <input
-                  type="radio"
-                  name="payment"
-                  value="cod"
-                  checked={paymentMethod === 'cod'}
-                  onChange={() => setPaymentMethod('cod')}
-                  className="sr-only"
-                />
-                <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors ${
-                  paymentMethod === 'cod' ? 'border-rose-400' : 'border-gray-300'
-                }`}>
-                  {paymentMethod === 'cod' && (
-                    <motion.div
-                      className="w-2.5 h-2.5 rounded-full bg-rose-400"
-                      initial={{ scale: 0 }}
-                      animate={{ scale: 1 }}
-                      transition={{ type: 'spring', stiffness: 500 }}
-                    />
-                  )}
-                </div>
-                <div className="flex-1">
-                  <div className="flex items-center gap-2">
-                    <BanknotesIcon className="w-4.5 h-4.5 text-emerald-500 w-5 h-5" />
-                    <span className="font-semibold text-gray-800 text-sm">Cash on Delivery</span>
+              {!codLoading && codEnabled && (
+                <label
+                  className={`flex items-center gap-4 p-4 rounded-xl border-2 cursor-pointer transition-all ${
+                    paymentMethod === 'cod'
+                      ? 'border-rose-400 bg-rose-50/50 shadow-sm shadow-rose-100'
+                      : 'border-gray-100 hover:border-gray-200 bg-white'
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="payment"
+                    value="cod"
+                    checked={paymentMethod === 'cod'}
+                    onChange={() => setPaymentMethod('cod')}
+                    className="sr-only"
+                  />
+                  <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors ${
+                    paymentMethod === 'cod' ? 'border-rose-400' : 'border-gray-300'
+                  }`}>
+                    {paymentMethod === 'cod' && (
+                      <motion.div
+                        className="w-2.5 h-2.5 rounded-full bg-rose-400"
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        transition={{ type: 'spring', stiffness: 500 }}
+                      />
+                    )}
                   </div>
-                  <p className="text-xs text-gray-500 mt-0.5 ml-7">
-                    Pay when your order arrives
-                  </p>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <BanknotesIcon className="w-4.5 h-4.5 text-emerald-500 w-5 h-5" />
+                      <span className="font-semibold text-gray-800 text-sm">Cash on Delivery</span>
+                    </div>
+                    <p className="text-xs text-gray-500 mt-0.5 ml-7">
+                      Pay when your order arrives
+                    </p>
+                  </div>
+                </label>
+              )}
+              {!codLoading && !codEnabled && (
+                <div className="flex items-center gap-4 p-4 rounded-xl border-2 border-gray-100 bg-gray-50 opacity-60">
+                  <div className="w-5 h-5 rounded-full border-2 border-gray-300 shrink-0" />
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <BanknotesIcon className="w-5 h-5 text-gray-400" />
+                      <span className="font-semibold text-gray-500 text-sm">Cash on Delivery</span>
+                      <span className="text-[10px] font-bold text-red-500 bg-red-50 px-2 py-0.5 rounded-full uppercase">Unavailable</span>
+                    </div>
+                    <p className="text-xs text-gray-400 mt-0.5 ml-7">
+                      COD is currently not available. Please pay online.
+                    </p>
+                  </div>
                 </div>
-              </label>
+              )}
             </div>
           </motion.div>
 

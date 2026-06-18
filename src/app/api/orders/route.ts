@@ -61,8 +61,11 @@ export async function POST(req: NextRequest) {
       if (!product) {
         return NextResponse.json({ error: `Product ${item.productId} not found` }, { status: 404 });
       }
+      if ((product.stock as number) <= 0) {
+        return NextResponse.json({ error: `"${product.name}" is out of stock` }, { status: 400 });
+      }
       if ((product.stock as number) < item.quantity) {
-        return NextResponse.json({ error: `Insufficient stock for ${product.name}` }, { status: 400 });
+        return NextResponse.json({ error: `Insufficient stock for ${product.name}. Only ${product.stock} left.` }, { status: 400 });
       }
 
       const price = (product.discount_price as number) || (product.price as number);
@@ -173,11 +176,33 @@ export async function POST(req: NextRequest) {
 
     // Deduct stock immediately for COD only
     if (paymentMethod === 'cod') {
+      const outOfStockProducts: string[] = [];
       for (const item of items) {
         await supabase.rpc('decrement_product_stock', {
           p_id: item.productId,
           amount: item.quantity,
         });
+
+        const { data: updatedProduct } = await supabase
+          .from('products')
+          .select('id, name, stock')
+          .eq('id', item.productId)
+          .maybeSingle();
+
+        if (updatedProduct && (updatedProduct.stock as number) <= 0) {
+          outOfStockProducts.push(updatedProduct.name as string);
+        }
+      }
+
+      if (outOfStockProducts.length > 0) {
+        await supabase.from('admin_notifications').insert(
+          outOfStockProducts.map((name) => ({
+            type: 'out_of_stock',
+            title: 'Product Out of Stock',
+            message: `"${name}" is now out of stock after COD order #${String(order.id).slice(-8).toUpperCase()}`,
+            is_read: false,
+          }))
+        );
       }
     }
 

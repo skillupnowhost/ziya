@@ -61,7 +61,7 @@ export default function ProductCard({ product }: { product: Product }) {
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
-    if (cartPopping) return;
+    if (cartPopping || product.stock <= 0) return;
     addItem({
       productId: product._id,
       name: product.name,
@@ -179,8 +179,15 @@ export default function ProductCard({ product }: { product: Product }) {
           )}
 
           {product.stock === 0 && (
-            <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
-              <span className="text-white font-semibold text-sm tracking-wide">Out of Stock</span>
+            <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/40 to-black/20 flex flex-col items-center justify-center gap-2 z-10">
+              <div className="w-12 h-12 rounded-full bg-white/15 backdrop-blur-sm flex items-center justify-center border border-white/20">
+                <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+                </svg>
+              </div>
+              <span className="text-white font-bold text-sm tracking-wider uppercase px-4 py-1.5 bg-red-500/80 rounded-full backdrop-blur-sm shadow-lg animate-pulse">
+                Sold Out
+              </span>
             </div>
           )}
 
