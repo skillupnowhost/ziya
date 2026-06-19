@@ -49,12 +49,14 @@ export async function POST(req: NextRequest) {
 
     // Validate stock and calculate totals
     let subtotal = 0;
+    let totalCgst = 0;
+    let totalSgst = 0;
     const orderItems = [];
 
     for (const item of items) {
       const { data: product } = await supabase
         .from('products')
-        .select('id, name, images, price, discount_price, stock')
+        .select('id, name, images, price, discount_price, stock, gst_enabled')
         .eq('id', item.productId)
         .maybeSingle();
 
@@ -69,7 +71,18 @@ export async function POST(req: NextRequest) {
       }
 
       const price = (product.discount_price as number) || (product.price as number);
-      subtotal += price * item.quantity;
+      const lineTotal = price * item.quantity;
+      subtotal += lineTotal;
+
+      const gstEnabled = product.gst_enabled !== false;
+      if (gstEnabled) {
+        // 5% GST for items priced below ₹1000, 12% for ₹1000+
+        const gstRate = price < 1000 ? 5 : 12;
+        const halfRate = gstRate / 2;
+        totalCgst += Math.round(lineTotal * halfRate / 100);
+        totalSgst += Math.round(lineTotal * halfRate / 100);
+      }
+
       const images = product.images as string[];
       orderItems.push({
         productId: product.id,
@@ -79,8 +92,13 @@ export async function POST(req: NextRequest) {
         quantity: item.quantity,
         size: item.size,
         color: item.color,
+        gstEnabled,
       });
     }
+
+    const cgst = totalCgst;
+    const sgst = totalSgst;
+    const gst = cgst + sgst;
 
     const shippingCost = subtotal >= 999 ? 0 : 99;
     let discount = 0;
@@ -147,7 +165,7 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    const total = subtotal + shippingCost - discount;
+    const total = subtotal + gst + shippingCost - discount;
 
     const { data: orderRow, error: orderErr } = await supabase
       .from('orders')
@@ -160,6 +178,9 @@ export async function POST(req: NextRequest) {
         subtotal,
         shipping_cost:    shippingCost,
         discount,
+        cgst,
+        sgst,
+        gst,
         total,
         status:           paymentMethod === 'cod' ? 'confirmed' : 'pending',
         payment_status:   'pending',

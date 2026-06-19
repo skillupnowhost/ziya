@@ -26,6 +26,9 @@ interface Order {
   subtotal: number;
   shippingCost: number;
   discount: number;
+  cgst: number;
+  sgst: number;
+  gst: number;
   status: string;
   paymentStatus: string;
   paymentMethod: string;
@@ -291,6 +294,13 @@ export default function OrderDetailPage() {
             transition={{ delay: 0.4, duration: 0.35 }}
           >
             <div className="flex justify-between text-gray-500"><span>Subtotal</span><span>₹{order.subtotal?.toLocaleString()}</span></div>
+            {order.gst > 0 && (
+              <>
+                <div className="flex justify-between text-gray-400 text-xs"><span>CGST</span><span>₹{order.cgst?.toLocaleString()}</span></div>
+                <div className="flex justify-between text-gray-400 text-xs"><span>SGST</span><span>₹{order.sgst?.toLocaleString()}</span></div>
+                <div className="flex justify-between text-gray-500"><span>GST</span><span>₹{order.gst?.toLocaleString()}</span></div>
+              </>
+            )}
             <div className="flex justify-between text-gray-500">
               <span>Shipping</span>
               <span className={order.shippingCost === 0 ? 'text-emerald-500 font-medium' : ''}>{order.shippingCost === 0 ? 'FREE' : `₹${order.shippingCost}`}</span>

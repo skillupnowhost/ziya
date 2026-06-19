@@ -12,6 +12,7 @@ export interface CartItem {
   size?: string;
   color?: string;
   stock: number;
+  gstEnabled?: boolean;
 }
 
 interface CartContextType {
@@ -24,6 +25,9 @@ interface CartContextType {
   subtotal: number;
   itemCount: number;
   shippingCost: number;
+  cgst: number;
+  sgst: number;
+  gst: number;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
@@ -96,12 +100,24 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const clearCart = useCallback(() => setItems([]), []);
 
   const subtotal = items.reduce((sum, i) => sum + i.price * i.quantity, 0);
+  // Tiered GST: 5% for items priced below ₹1000, 12% for ₹1000+
+  const { totalCgst, totalSgst } = items.reduce((acc, i) => {
+    if (i.gstEnabled === false) return acc;
+    const gstRate = i.price < 1000 ? 5 : 12;
+    const lineTotal = i.price * i.quantity;
+    acc.totalCgst += Math.round(lineTotal * (gstRate / 2) / 100);
+    acc.totalSgst += Math.round(lineTotal * (gstRate / 2) / 100);
+    return acc;
+  }, { totalCgst: 0, totalSgst: 0 });
+  const cgst = totalCgst;
+  const sgst = totalSgst;
+  const gst = cgst + sgst;
   const shippingCost = subtotal >= 999 ? 0 : items.length > 0 ? 99 : 0;
-  const total = subtotal + shippingCost;
+  const total = subtotal + gst + shippingCost;
   const itemCount = items.length;
 
   return (
-    <CartContext.Provider value={{ items, addItem, removeItem, updateQuantity, clearCart, total, subtotal, itemCount, shippingCost }}>
+    <CartContext.Provider value={{ items, addItem, removeItem, updateQuantity, clearCart, total, subtotal, itemCount, shippingCost, cgst, sgst, gst }}>
       {children}
     </CartContext.Provider>
   );

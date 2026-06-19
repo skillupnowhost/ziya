@@ -23,6 +23,7 @@ interface Product {
   isFeatured: boolean;
   isTrending: boolean;
   isNewProduct: boolean;
+  gstEnabled: boolean;
 }
 
 const ALL_SIZES = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'Free Size'];
@@ -50,7 +51,7 @@ function generateSKU(name: string, category: string): string {
 const EMPTY_FORM = {
   name: '', description: '', category: 'accessories', price: '', discountPrice: '',
   stock: '', colors: '', sku: '',
-  isFeatured: false, isNew: true, isTrending: false, isActive: true,
+  isFeatured: false, isNew: true, isTrending: false, isActive: true, gstEnabled: true,
 };
 
 // ── Delete confirm modal ───────────────────────────────────────────────────
@@ -213,9 +214,11 @@ export default function AdminProductsPage() {
     setSaving(true);
     try {
       const { isNew: isNewVal, ...restForm } = form;
+      const { gstEnabled: gstVal, ...payloadRest } = restForm;
       const payload = {
-        ...restForm,
+        ...payloadRest,
         isNewProduct: isNewVal,
+        gstEnabled: gstVal,
         price: Number(form.price),
         discountPrice: form.discountPrice ? Number(form.discountPrice) : undefined,
         stock: Number(form.stock),
@@ -259,6 +262,7 @@ export default function AdminProductsPage() {
       isNew: p.isNewProduct,
       isTrending: p.isTrending,
       isActive: p.isActive,
+      gstEnabled: p.gstEnabled ?? true,
     });
     setImages(p.images || []);
     setSelectedSizes(p.sizes || []);
@@ -566,6 +570,7 @@ export default function AdminProductsPage() {
                     { key: 'isNew', label: 'Mark as New', color: 'blue' },
                     { key: 'isTrending', label: 'Trending', color: 'rose' },
                     { key: 'isFeatured', label: 'Featured', color: 'amber' },
+                    { key: 'gstEnabled', label: 'GST Applicable', color: 'indigo' },
                   ].map((toggle) => {
                     const checked = form[toggle.key as keyof typeof form] as boolean;
                     return (

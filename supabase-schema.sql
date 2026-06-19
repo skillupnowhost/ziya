@@ -43,6 +43,7 @@ create table if not exists products (
   is_new_product  boolean not null default true,
   is_trending     boolean not null default false,
   is_active       boolean not null default true,
+  gst_enabled     boolean not null default true,
   rating          numeric not null default 0,
   review_count    integer not null default 0,
   created_at      timestamptz not null default now(),
@@ -78,6 +79,9 @@ create table if not exists orders (
   subtotal          numeric not null default 0,
   shipping_cost     numeric not null default 0,
   discount          numeric not null default 0,
+  cgst              numeric not null default 0,
+  sgst              numeric not null default 0,
+  gst               numeric not null default 0,
   total             numeric not null default 0,
   status            text not null default 'pending'
                       check (status in ('pending','confirmed','processing','shipped','delivered','cancelled')),

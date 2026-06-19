@@ -32,7 +32,7 @@ type PaymentMethod = 'razorpay' | 'cod';
 function CheckoutContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const { items, subtotal, shippingCost, clearCart } = useCart();
+  const { items, subtotal, shippingCost, clearCart, cgst, sgst, gst } = useCart();
   const { user } = useAuth();
 
   const [promoInput, setPromoInput] = useState(searchParams.get('promo') || '');
@@ -65,7 +65,7 @@ function CheckoutContent() {
     if (appliedPromo.type === 'shipping') return shippingCost;
     return 0;
   })();
-  const total = subtotal + shippingCost - discount;
+  const total = subtotal + gst + shippingCost - discount;
 
   useEffect(() => {
     if (!user) router.push('/auth/login?redirect=/checkout');
@@ -496,6 +496,22 @@ function CheckoutContent() {
               <span>Subtotal</span>
               <span>₹{subtotal.toLocaleString()}</span>
             </div>
+            {gst > 0 && (
+              <>
+                <div className="flex justify-between text-gray-500 text-xs">
+                  <span>CGST</span>
+                  <span>₹{cgst.toLocaleString()}</span>
+                </div>
+                <div className="flex justify-between text-gray-500 text-xs">
+                  <span>SGST</span>
+                  <span>₹{sgst.toLocaleString()}</span>
+                </div>
+                <div className="flex justify-between text-gray-600">
+                  <span>GST</span>
+                  <span>₹{gst.toLocaleString()}</span>
+                </div>
+              </>
+            )}
             <div className="flex justify-between text-gray-600">
               <span>Shipping</span>
               <span className={shippingCost === 0 ? 'text-emerald-500 font-medium' : ''}>

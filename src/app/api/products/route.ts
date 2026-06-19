@@ -107,6 +107,7 @@ export async function POST(req: NextRequest) {
       is_new_product:  body.isNewProduct ?? body.is_new_product ?? true,
       is_trending:     body.isTrending  ?? body.is_trending  ?? false,
       is_active:       body.isActive    ?? body.is_active    ?? true,
+      gst_enabled:     body.gstEnabled  ?? body.gst_enabled  ?? true,
     };
 
     const { data: row, error } = await supabase

@@ -33,6 +33,9 @@ interface Order {
   subtotal: number;
   shippingCost: number;
   discount: number;
+  cgst: number;
+  sgst: number;
+  gst: number;
   status: string;
   paymentStatus: string;
   paymentMethod: string;

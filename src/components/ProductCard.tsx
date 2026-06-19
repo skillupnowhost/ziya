@@ -20,6 +20,7 @@ interface Product {
   stock: number;
   isNew?: boolean;
   isTrending?: boolean;
+  gstEnabled?: boolean;
 }
 
 export default function ProductCard({ product }: { product: Product }) {
@@ -69,6 +70,7 @@ export default function ProductCard({ product }: { product: Product }) {
       image: product.images[0] || '',
       quantity: 1,
       stock: product.stock,
+      gstEnabled: product.gstEnabled ?? true,
     });
     setCartPopping(true);
     setTimeout(() => setCartPopping(false), 600);

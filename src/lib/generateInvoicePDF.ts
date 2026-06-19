@@ -18,6 +18,9 @@ interface InvoiceOrder {
   subtotal: number;
   shippingCost: number;
   discount: number;
+  cgst: number;
+  sgst: number;
+  gst: number;
   status: string;
   paymentStatus: string;
   paymentMethod: string;
@@ -181,6 +184,11 @@ export function downloadInvoicePDF(order: InvoiceOrder) {
   };
 
   drawTotalRow('Subtotal', `₹${(order.subtotal || 0).toLocaleString('en-IN')}`);
+  if (order.gst > 0) {
+    drawTotalRow('CGST', `₹${(order.cgst || 0).toLocaleString('en-IN')}`);
+    drawTotalRow('SGST', `₹${(order.sgst || 0).toLocaleString('en-IN')}`);
+    drawTotalRow('GST', `₹${(order.gst || 0).toLocaleString('en-IN')}`, { bold: true });
+  }
   drawTotalRow(
     'Shipping',
     order.shippingCost === 0 ? 'FREE' : `₹${order.shippingCost}`,

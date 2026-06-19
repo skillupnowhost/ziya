@@ -28,6 +28,7 @@ interface Product {
   isTrending?: boolean;
   tags?: string[];
   brand?: string;
+  gstEnabled?: boolean;
 }
 
 interface Review {
@@ -134,6 +135,7 @@ export default function ProductDetailClient() {
       size: selectedSize,
       color: selectedColor,
       stock: liveStock,
+      gstEnabled: product.gstEnabled ?? true,
     });
     toast.success('Added to cart! 🛍️');
   };
@@ -151,6 +153,7 @@ export default function ProductDetailClient() {
       size: selectedSize,
       color: selectedColor,
       stock: liveStock,
+      gstEnabled: product.gstEnabled ?? true,
     });
     router.push('/checkout');
   };

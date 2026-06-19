@@ -38,6 +38,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       isNewProduct:  'is_new_product',
       isTrending:    'is_trending',
       isActive:      'is_active',
+      gstEnabled:    'gst_enabled',
     };
 
     for (const [k, v] of Object.entries(body)) {

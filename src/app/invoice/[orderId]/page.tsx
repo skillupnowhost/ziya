@@ -28,6 +28,9 @@ interface Order {
   subtotal: number;
   shippingCost: number;
   discount: number;
+  cgst: number;
+  sgst: number;
+  gst: number;
   promoCode?: string;
   trackingNumber?: string;
   courierService?: string;
@@ -464,6 +467,22 @@ function InvoiceContent() {
                   <span className="text-gray-500">Subtotal ({totalQuantity} items)</span>
                   <span className="text-gray-700 font-medium">₹{Number(order.subtotal).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
                 </div>
+                {order.gst > 0 && (
+                  <>
+                    <div className="flex justify-between text-xs text-gray-400">
+                      <span>CGST</span>
+                      <span>₹{Number(order.cgst).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                    </div>
+                    <div className="flex justify-between text-xs text-gray-400">
+                      <span>SGST</span>
+                      <span>₹{Number(order.sgst).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-500">GST</span>
+                      <span className="text-gray-700 font-medium">₹{Number(order.gst).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                    </div>
+                  </>
+                )}
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-500">Shipping & Handling</span>
                   <span className={order.shippingCost === 0 ? 'text-emerald-500 font-semibold' : 'text-gray-700 font-medium'}>

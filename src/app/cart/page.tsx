@@ -9,7 +9,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import ConfirmDialog from '@/components/ConfirmDialog';
 
 export default function CartPage() {
-  const { items, removeItem, updateQuantity, clearCart, subtotal, shippingCost, total } = useCart();
+  const { items, removeItem, updateQuantity, clearCart, subtotal, shippingCost, total, cgst, sgst, gst } = useCart();
   const [promoCode, setPromoCode] = useState('');
   const [appliedPromo, setAppliedPromo] = useState('');
   const [discount, setDiscount] = useState(0);
@@ -283,6 +283,22 @@ export default function CartPage() {
                 <span>Subtotal ({items.reduce((s, i) => s + i.quantity, 0)} items)</span>
                 <span>₹{subtotal.toLocaleString()}</span>
               </div>
+              {gst > 0 && (
+                <>
+                  <div className="flex justify-between text-gray-500 text-xs">
+                    <span>CGST</span>
+                    <span>₹{cgst.toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between text-gray-500 text-xs">
+                    <span>SGST</span>
+                    <span>₹{sgst.toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between text-gray-600">
+                    <span>GST</span>
+                    <span>₹{gst.toLocaleString()}</span>
+                  </div>
+                </>
+              )}
               <div className="flex justify-between text-gray-600">
                 <span>Shipping</span>
                 <span className={shippingCost === 0 ? 'text-emerald-500 font-semibold' : ''}>
