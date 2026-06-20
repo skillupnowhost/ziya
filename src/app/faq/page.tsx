@@ -22,6 +22,7 @@ const faqCategories = [
   {
     id: 'orders', label: 'Orders', Icon: ShoppingBagIcon,
     color: '#f43f5e', bg: '#fff1f2', border: '#fecdd3', ring: 'rgba(244,63,94,0.12)',
+    iconAnim: { animate: { y: [0, -2, 0], rotate: [0, -6, 0] }, transition: { duration: 2, repeat: Infinity, ease: 'easeInOut' as const, repeatDelay: 2 } },
     questions: [
       { q: 'How do I place an order?', a: 'Browse our collections, add items to your cart, and proceed to checkout. Pay via Razorpay (UPI, cards, net banking). You\'ll receive a confirmation email with your order ID right away.' },
       { q: 'Can I modify or cancel my order?', a: 'Orders can be modified or cancelled within 2 hours of placement. After that, we begin processing and cannot make changes. Email ziyasupport@gmail.com immediately if you need to cancel.' },
@@ -32,6 +33,7 @@ const faqCategories = [
   {
     id: 'shipping', label: 'Shipping', Icon: TruckIcon,
     color: '#f97316', bg: '#fff7ed', border: '#fed7aa', ring: 'rgba(249,115,22,0.12)',
+    iconAnim: { animate: { x: [0, 4, 0, -2, 0] }, transition: { duration: 2.5, repeat: Infinity, ease: 'easeInOut' as const, repeatDelay: 1.5 } },
     questions: [
       { q: 'How long does delivery take?', a: 'Tamil Nadu: 2–3 days. South India: 2–5 days. North India: 5–8 days. Remote areas: 3–8 days. J&K / North East: 7–14 business days.' },
       { q: 'Is there free shipping?', a: 'Yes! All orders above ₹999 qualify for free standard shipping. Orders below ₹999 have a flat ₹99 shipping fee.' },
@@ -42,6 +44,7 @@ const faqCategories = [
   {
     id: 'returns', label: 'Returns', Icon: ArrowPathIcon,
     color: '#8b5cf6', bg: '#f5f3ff', border: '#ddd6fe', ring: 'rgba(139,92,246,0.12)',
+    iconAnim: { animate: { rotate: [0, 360] }, transition: { duration: 3, repeat: Infinity, ease: [0.4, 0, 0.2, 1] as [number, number, number, number] } },
     questions: [
       { q: 'What is your return policy?', a: 'We do not accept returns or exchanges. However, if you receive a damaged item, please share an unboxing video with our WhatsApp (+91 9003828556) or email within 24 hours of delivery.' },
       { q: 'What if I receive a damaged item?', a: 'Email us at ziyasupport@gmail.com with photos and order details within 24 hours of delivery. We\'ll review promptly and arrange a replacement.' },
@@ -52,6 +55,7 @@ const faqCategories = [
   {
     id: 'products', label: 'Products', Icon: SparklesIcon,
     color: '#ec4899', bg: '#fdf2f8', border: '#fbcfe8', ring: 'rgba(236,72,153,0.12)',
+    iconAnim: { animate: { scale: [1, 1.2, 1], rotate: [0, 15, -15, 0] }, transition: { duration: 2.5, repeat: Infinity, ease: 'easeInOut' as const, repeatDelay: 2.5 } },
     questions: [
       { q: 'How do I find my size?', a: 'Every product page has a size guide with measurements in centimetres. When in doubt, size up — Korean styles tend to run slim.' },
       { q: 'Are your products authentic Korean fashion?', a: 'Yes! Our collections are sourced directly from Korean fashion suppliers — K-drama-inspired dresses, accessories, and stationery.' },
@@ -62,6 +66,7 @@ const faqCategories = [
   {
     id: 'payment', label: 'Payment', Icon: CreditCardIcon,
     color: '#0ea5e9', bg: '#f0f9ff', border: '#bae6fd', ring: 'rgba(14,165,233,0.12)',
+    iconAnim: { animate: { rotateY: [0, 180, 360] }, transition: { duration: 4, repeat: Infinity, ease: 'easeInOut' as const, repeatDelay: 2 } },
     questions: [
       { q: 'What payment methods do you accept?', a: 'We accept all major methods via Razorpay — UPI (PhonePe, Google Pay, Paytm), credit/debit cards, net banking, and EMI on select banks.' },
       { q: 'Is my payment information secure?', a: 'All payments are processed by Razorpay with 256-bit SSL encryption. Ziya never stores your card details.' },
@@ -148,10 +153,10 @@ export default function FAQPage() {
       </section>
 
       {/* ── STICKY TABS ── */}
-      <div className="sticky top-0 z-30 bg-white/95 backdrop-blur-xl border-b border-slate-100 shadow-sm">
-        <div className="max-w-4xl mx-auto px-4 overflow-x-auto hide-scrollbar">
+      <div className="sticky top-0 z-30 bg-white/90 backdrop-blur-xl border-b border-slate-100/80 shadow-[0_2px_16px_rgba(0,0,0,0.04)]">
+        <div className="max-w-4xl mx-auto px-2 sm:px-4 overflow-x-auto hide-scrollbar">
           <motion.div
-            className="flex gap-1.5 py-3 w-max sm:w-auto sm:justify-center mx-auto"
+            className="flex gap-1 sm:gap-1.5 py-2.5 sm:py-3 w-max sm:w-auto sm:justify-center mx-auto"
             variants={stagger(0.05, 0.08)} initial="hidden" animate="show">
             {faqCategories.map(c => {
               const active = activeCategory === c.id;
@@ -159,16 +164,43 @@ export default function FAQPage() {
                 <motion.button key={c.id} type="button"
                   variants={scaleIn} transition={spring}
                   onClick={() => { setActiveCategory(c.id); setOpenItem(null); }}
-                  className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold whitespace-nowrap transition-all duration-200"
+                  className="relative flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg sm:rounded-xl text-[13px] sm:text-sm font-semibold whitespace-nowrap transition-all duration-300 group"
                   style={{
-                    background: active ? c.color : 'transparent',
-                    color:      active ? '#fff'  : '#64748b',
-                    boxShadow:  active ? `0 4px 16px ${c.ring}` : 'none',
+                    background: active ? `linear-gradient(135deg, ${c.color}, ${c.color}dd)` : 'transparent',
+                    color:      active ? '#fff' : '#64748b',
+                    boxShadow:  active ? `0 4px 20px ${c.ring}, 0 2px 8px ${c.ring}` : 'none',
                   }}
-                  whileHover={{ scale: active ? 1 : 1.04, y: active ? 0 : -1 }}
-                  whileTap={{ scale: 0.95 }}>
-                  <c.Icon className="w-4 h-4 flex-shrink-0" />
+                  whileHover={{
+                    scale: active ? 1.02 : 1.05,
+                    y: active ? 0 : -2,
+                    backgroundColor: active ? undefined : c.bg,
+                    color: active ? '#fff' : c.color,
+                    boxShadow: active ? `0 6px 24px ${c.ring}, 0 2px 8px ${c.ring}` : `0 4px 16px ${c.ring}`,
+                  }}
+                  whileTap={{
+                    scale: 0.92,
+                    backgroundColor: active ? undefined : c.bg,
+                    color: active ? '#fff' : c.color,
+                    boxShadow: active ? `0 4px 20px ${c.ring}` : `0 2px 12px ${c.ring}`,
+                  }}>
+                  <motion.div
+                    className="flex-shrink-0"
+                    animate={c.iconAnim.animate}
+                    transition={c.iconAnim.transition as Transition}
+                    whileHover={{ scale: 1.25, transition: { duration: 0.2 } }}
+                    whileTap={{ scale: 1.3, transition: { duration: 0.15 } }}>
+                    <c.Icon className="w-4 h-4" />
+                  </motion.div>
                   {c.label}
+                  {!active && (
+                    <motion.span
+                      className="absolute bottom-0.5 left-1/2 h-[2px] rounded-full"
+                      style={{ background: `linear-gradient(90deg, transparent, ${c.color}, transparent)` }}
+                      initial={{ width: 0, x: '-50%', opacity: 0 }}
+                      whileHover={{ width: '60%', x: '-50%', opacity: 1 }}
+                      whileTap={{ width: '50%', x: '-50%', opacity: 1 }}
+                      transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }} />
+                  )}
                 </motion.button>
               );
             })}

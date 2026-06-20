@@ -405,7 +405,7 @@ export default function TrackOrderPage() {
               style={{ backgroundSize: '300% auto' }}
               animate={{ backgroundPosition: ['0% center', '100% center', '0% center'] }}
               transition={{ duration: 6, repeat: Infinity, ease: 'linear' }}>
-              my order?
+              My Order?
             </motion.span>
           </motion.h1>
 

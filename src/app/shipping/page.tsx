@@ -29,13 +29,20 @@ const deliveryZones = [
 ];
 
 const navItems = [
-  { num: '01', label: 'Support',    Icon: ClockIcon             },
-  { num: '02', label: 'Processing', Icon: CubeIcon              },
-  { num: '03', label: 'Delivery',   Icon: TruckIcon             },
-  { num: '04', label: 'Tracking',   Icon: BellAlertIcon         },
-  { num: '05', label: 'Returns',    Icon: ArrowPathIcon         },
-  { num: '06', label: 'Damage',     Icon: ShieldExclamationIcon },
-  { num: '07', label: 'Zones',      Icon: MapPinIcon            },
+  { num: '01', label: 'Support',    Icon: ClockIcon,             color: '#f43f5e', bg: 'rgba(244,63,94,0.08)',  ring: 'rgba(244,63,94,0.18)',
+    anim: { animate: { rotate: [0, 360] },                                         transition: { duration: 6,   repeat: Infinity, ease: 'linear' } } },
+  { num: '02', label: 'Processing', Icon: CubeIcon,              color: '#8b5cf6', bg: 'rgba(139,92,246,0.08)', ring: 'rgba(139,92,246,0.18)',
+    anim: { animate: { rotateY: [0, 180, 360] },                                   transition: { duration: 4,   repeat: Infinity, ease: 'easeInOut', repeatDelay: 2 } } },
+  { num: '03', label: 'Delivery',   Icon: TruckIcon,             color: '#f97316', bg: 'rgba(249,115,22,0.08)', ring: 'rgba(249,115,22,0.18)',
+    anim: { animate: { x: [0, 3, 0, -2, 0] },                                     transition: { duration: 2.5, repeat: Infinity, ease: 'easeInOut', repeatDelay: 1.5 } } },
+  { num: '04', label: 'Tracking',   Icon: BellAlertIcon,         color: '#3b82f6', bg: 'rgba(59,130,246,0.08)', ring: 'rgba(59,130,246,0.18)',
+    anim: { animate: { rotate: [0, -15, 15, -10, 10, 0] },                         transition: { duration: 1.2, repeat: Infinity, ease: 'easeInOut', repeatDelay: 3 } } },
+  { num: '05', label: 'Returns',    Icon: ArrowPathIcon,         color: '#ec4899', bg: 'rgba(236,72,153,0.08)', ring: 'rgba(236,72,153,0.18)',
+    anim: { animate: { rotate: [0, 360] },                                         transition: { duration: 3,   repeat: Infinity, ease: [0.4, 0, 0.2, 1] as [number, number, number, number] } } },
+  { num: '06', label: 'Damage',     Icon: ShieldExclamationIcon, color: '#ef4444', bg: 'rgba(239,68,68,0.08)',  ring: 'rgba(239,68,68,0.18)',
+    anim: { animate: { scale: [1, 1.18, 1], rotate: [0, -5, 5, 0] },              transition: { duration: 2.5, repeat: Infinity, ease: 'easeInOut', repeatDelay: 2 } } },
+  { num: '07', label: 'Zones',      Icon: MapPinIcon,            color: '#6366f1', bg: 'rgba(99,102,241,0.08)', ring: 'rgba(99,102,241,0.18)',
+    anim: { animate: { y: [0, -3, 0] },                                            transition: { duration: 1.5, repeat: Infinity, ease: 'easeInOut', repeatDelay: 2 } } },
 ];
 
 function AnimatedDivider() {
@@ -157,18 +164,46 @@ export default function ShippingPage() {
       </section>
 
       {/* ══ STICKY NAV ══ */}
-      <div className="sticky top-0 z-20 bg-white/95 backdrop-blur-lg border-b border-slate-100 shadow-sm">
-        <div className="max-w-5xl mx-auto px-4">
-          <div className="flex gap-0.5 overflow-x-auto hide-scrollbar py-2">
+      <div className="sticky top-0 z-20 bg-white/90 backdrop-blur-xl border-b border-slate-100/80 shadow-[0_2px_16px_rgba(0,0,0,0.04)]">
+        <div className="max-w-5xl mx-auto px-2 sm:px-4">
+          <div className="flex gap-0.5 sm:gap-1 overflow-x-auto hide-scrollbar py-2 sm:py-2.5 md:justify-center">
             {navItems.map((s, i) => (
               <motion.a key={s.num} href={`#section-${s.num}`}
-                className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold whitespace-nowrap text-slate-400 hover:text-slate-800 hover:bg-slate-50 transition-all duration-200"
-                initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.04 * i, ...spring }}
-                whileHover={{ y: -1 }} whileTap={{ scale: 0.94 }}>
-                <s.Icon className="w-3.5 h-3.5" />
-                <span className="text-slate-300 font-mono text-[10px]">{s.num}</span>
+                className="relative flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3.5 py-2 sm:py-2 rounded-lg sm:rounded-xl text-[11px] sm:text-xs font-semibold whitespace-nowrap transition-all duration-300 group"
+                style={{ color: '#94a3b8' }}
+                initial={{ opacity: 0, y: 8, scale: 0.92 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                transition={{ delay: 0.05 * i, type: 'spring', stiffness: 400, damping: 25 }}
+                whileHover={{
+                  y: -2,
+                  color: s.color,
+                  backgroundColor: s.bg,
+                  boxShadow: `0 4px 16px ${s.ring}`,
+                  transition: { duration: 0.25, ease: 'easeOut' },
+                }}
+                whileTap={{
+                  scale: 0.93,
+                  color: s.color,
+                  backgroundColor: s.bg,
+                  boxShadow: `0 2px 12px ${s.ring}`,
+                }}>
+                <motion.div
+                  className="flex-shrink-0"
+                  animate={s.anim.animate}
+                  transition={s.anim.transition as Transition}
+                  whileHover={{ scale: 1.25, transition: { duration: 0.2 } }}
+                  whileTap={{ scale: 1.3, transition: { duration: 0.15 } }}>
+                  <s.Icon className="w-3.5 h-3.5 sm:w-3.5 sm:h-3.5" />
+                </motion.div>
+                <span className="font-mono text-[9px] sm:text-[10px] opacity-40 group-hover:opacity-70 group-active:opacity-70 transition-opacity duration-300">{s.num}</span>
                 {s.label}
+                <motion.span
+                  className="absolute bottom-0 left-1/2 h-[2px] rounded-full"
+                  style={{ background: `linear-gradient(90deg, transparent, ${s.color}, transparent)` }}
+                  initial={{ width: 0, x: '-50%', opacity: 0 }}
+                  whileHover={{ width: '70%', x: '-50%', opacity: 1 }}
+                  whileTap={{ width: '60%', x: '-50%', opacity: 1 }}
+                  transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }} />
               </motion.a>
             ))}
           </div>
