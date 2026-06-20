@@ -7,8 +7,9 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const page      = parseInt(searchParams.get('page')  || '1');
     const limit     = parseInt(searchParams.get('limit') || '20');
-    const category  = searchParams.get('category');
-    const search    = searchParams.get('search');
+    const category    = searchParams.get('category');
+    const subcategory = searchParams.get('subcategory');
+    const search      = searchParams.get('search');
     const sort      = searchParams.get('sort')  || 'created_at';
     const order     = searchParams.get('order') || 'desc';
     const isTrending = searchParams.get('trending');
@@ -35,6 +36,7 @@ export async function GET(req: NextRequest) {
       .eq('is_active', true);
 
     if (category)         query = query.eq('category', category);
+    if (subcategory)      query = query.eq('subcategory', subcategory);
     if (isTrending === 'true') query = query.eq('is_trending', true);
     if (isNew === 'true')      query = query.eq('is_new_product', true);
     if (isFeatured === 'true') query = query.eq('is_featured', true);

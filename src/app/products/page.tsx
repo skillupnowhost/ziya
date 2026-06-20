@@ -46,6 +46,14 @@ const CATEGORY_CONFIG: Record<string, { emoji: string; gradient: string; activeG
   Dresses:     { emoji: '👗', gradient: 'from-pink-50 to-purple-50',  activeGradient: 'from-pink-400 to-purple-500', activeText: 'text-pink-700',  glowColor: 'shadow-pink-200'   },
 };
 
+const ACCESSORIES_SUBCATEGORIES = [
+  { key: 'earring',                label: 'Earring',                emoji: '💎' },
+  { key: 'bracelet',               label: 'Bracelet',               emoji: '📿' },
+  { key: 'chain',                  label: 'Chain',                  emoji: '⛓️' },
+  { key: 'hair-accessories',       label: 'Hair Accessories',       emoji: '🎀' },
+  { key: 'anti-tarnish-jewellery', label: 'Anti Tarnish Jewellery', emoji: '💍' },
+];
+
 const SORT_OPTIONS = [
   { label: 'Latest',            value: 'createdAt-desc' },
   { label: 'Price: Low to High', value: 'price-asc'     },
@@ -167,9 +175,10 @@ function SortDropdown({ value, onChange }: { value: string; onChange: (v: string
 interface Filters {
   priceMin: string; priceMax: string; rating: number;
   trending: boolean; isNew: boolean; inStockOnly: boolean;
+  subcategory: string;
 }
 const DEFAULT_FILTERS: Filters = {
-  priceMin:'', priceMax:'', rating:0, trending:false, isNew:false, inStockOnly:false,
+  priceMin:'', priceMax:'', rating:0, trending:false, isNew:false, inStockOnly:false, subcategory:'',
 };
 
 /* ─── CollapsibleSection ─── */
@@ -206,7 +215,7 @@ function SidebarFilters({ activeCategory, filters, setFilters, onClearAll, onCat
   activeCategory:string; filters:Filters; setFilters:React.Dispatch<React.SetStateAction<Filters>>; onClearAll:()=>void; onCategoryChange:(cat:string)=>void; hideHeader?:boolean;
 }) {
   const hasActiveFilters = filters.priceMin || filters.priceMax || filters.rating > 0 ||
-    filters.trending || filters.isNew || filters.inStockOnly;
+    filters.trending || filters.isNew || filters.inStockOnly || filters.subcategory;
 
   return (
     <aside className="w-full">
@@ -264,7 +273,7 @@ function SidebarFilters({ activeCategory, filters, setFilters, onClearAll, onCat
                 <button
                   type="button"
                   className="block w-full text-left"
-                  onClick={() => onCategoryChange(cat)}
+                  onClick={() => { onCategoryChange(cat); setFilters(prev => ({ ...prev, subcategory: '' })); }}
                 >
                   <motion.div
                     className={`relative flex items-center gap-3 px-3 py-2.5 rounded-xl overflow-hidden cursor-pointer transition-colors duration-200 ${
@@ -325,6 +334,86 @@ function SidebarFilters({ activeCategory, filters, setFilters, onClearAll, onCat
                     </AnimatePresence>
                   </motion.div>
                 </button>
+
+                {/* Accessories subcategories */}
+                {cat === 'Accessories' && isActive && (
+                  <motion.div
+                    className="ml-5 mt-1 space-y-0.5 border-l-2 border-amber-200 pl-2"
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                    transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+                  >
+                    {ACCESSORIES_SUBCATEGORIES.map((sub, si) => {
+                      const isSubActive = filters.subcategory === sub.key;
+                      return (
+                        <motion.button
+                          key={sub.key}
+                          type="button"
+                          className="block w-full text-left"
+                          onClick={(e) => { e.stopPropagation(); setFilters(prev => ({ ...prev, subcategory: prev.subcategory === sub.key ? '' : sub.key })); }}
+                          initial={{ opacity: 0, x: -10 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: si * 0.05, duration: 0.25 }}
+                        >
+                          <motion.div
+                            className={`relative flex items-center gap-3 px-3 py-2.5 rounded-xl overflow-hidden cursor-pointer transition-colors duration-200 ${
+                              isSubActive ? 'bg-gray-50' : 'hover:bg-gray-50/60'
+                            }`}
+                            whileHover={{ x: 3 }}
+                            whileTap={{ scale: 0.97 }}
+                            transition={{ type: 'spring', stiffness: 400, damping: 28 }}
+                          >
+                            <AnimatePresence>
+                              {isSubActive && (
+                                <motion.div
+                                  className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 rounded-r-full bg-gradient-to-b from-amber-400 to-orange-400"
+                                  initial={{ scaleY: 0, opacity: 0 }}
+                                  animate={{ scaleY: 1, opacity: 1 }}
+                                  exit={{ scaleY: 0, opacity: 0 }}
+                                  transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+                                />
+                              )}
+                            </AnimatePresence>
+
+                            <motion.div
+                              className={`w-7 h-7 rounded-lg flex items-center justify-center text-sm flex-shrink-0 transition-all duration-200 ${
+                                isSubActive
+                                  ? 'bg-gradient-to-br from-amber-400 to-orange-400 shadow-sm shadow-amber-200'
+                                  : 'bg-gradient-to-br from-amber-50 to-yellow-50'
+                              }`}
+                              animate={isSubActive ? { scale: [1, 1.1, 1] } : { scale: 1 }}
+                              transition={{ duration: 0.3 }}
+                            >
+                              <span className="leading-none">{sub.emoji}</span>
+                            </motion.div>
+
+                            <span className={`flex-1 text-xs font-semibold transition-colors duration-200 ${
+                              isSubActive ? 'text-amber-700' : 'text-gray-500'
+                            }`}>
+                              {sub.label}
+                            </span>
+
+                            <AnimatePresence>
+                              {isSubActive && (
+                                <motion.div
+                                  key="sub-check"
+                                  initial={{ scale: 0, opacity: 0 }}
+                                  animate={{ scale: 1, opacity: 1 }}
+                                  exit={{ scale: 0, opacity: 0 }}
+                                  transition={{ type: 'spring', stiffness: 500, damping: 25 }}
+                                  className="w-3.5 h-3.5 rounded-full bg-gradient-to-br from-amber-400 to-orange-400 flex items-center justify-center flex-shrink-0"
+                                >
+                                  <CheckIcon className="w-2 h-2 text-white" />
+                                </motion.div>
+                              )}
+                            </AnimatePresence>
+                          </motion.div>
+                        </motion.button>
+                      );
+                    })}
+                  </motion.div>
+                )}
               </motion.div>
             );
           })}
@@ -570,6 +659,7 @@ function ProductsContent() {
       const [sortField, sortOrder] = sort.split('-');
       const params = new URLSearchParams({ page: String(p), limit: String(LIMIT), sort: sortField, order: sortOrder });
       if (category !== 'all') params.set('category', category);
+      if (filters.subcategory) params.set('subcategory', filters.subcategory);
       if (search) params.set('search', search);
       if (filters.trending) params.set('trending', 'true');
       if (filters.isNew)    params.set('new', 'true');
@@ -625,12 +715,16 @@ function ProductsContent() {
 
   const activeFilterCount = [
     filters.priceMin || filters.priceMax, filters.rating > 0,
-    filters.trending, filters.isNew, filters.inStockOnly,
+    filters.trending, filters.isNew, filters.inStockOnly, filters.subcategory,
   ].filter(Boolean).length;
 
   /* active-chip list for AnimatePresence */
   type Chip = { id: string; label: string; clear: () => void };
   const chips: Chip[] = [];
+  if (filters.subcategory) {
+    const subLabel = ACCESSORIES_SUBCATEGORIES.find(s => s.key === filters.subcategory)?.label || filters.subcategory;
+    chips.push({ id:'subcategory', label: subLabel, clear:() => setFilters(prev => ({...prev,subcategory:''})) });
+  }
   if (filters.priceMin || filters.priceMax) chips.push({ id:'price',    label:`₹${filters.priceMin||'0'} – ₹${filters.priceMax||'∞'}`, clear:() => setFilters(prev => ({...prev,priceMin:'',priceMax:''})) });
   if (filters.rating > 0)  chips.push({ id:'rating',   label:`${filters.rating}+ Stars`, clear:() => setFilters(prev => ({...prev,rating:0}))         });
   if (filters.trending)    chips.push({ id:'trending',  label:'🔥 Trending',             clear:() => setFilters(prev => ({...prev,trending:false}))    });

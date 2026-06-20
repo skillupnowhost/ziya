@@ -11,6 +11,7 @@ interface Product {
   name: string;
   description?: string;
   category: string;
+  subcategory?: string;
   price: number;
   discountPrice?: number;
   stock: number;
@@ -26,14 +27,21 @@ interface Product {
   gstEnabled: boolean;
 }
 
+const ACCESSORIES_SUBCATEGORIES = ['earring', 'bracelet', 'chain', 'hair-accessories', 'anti-tarnish-jewellery'] as const;
+const SUBCATEGORY_LABELS: Record<string, string> = {
+  'earring': 'Earring',
+  'bracelet': 'Bracelet',
+  'chain': 'Chain',
+  'hair-accessories': 'Hair Accessories',
+  'anti-tarnish-jewellery': 'Anti Tarnish Jewellery',
+};
+
 const ALL_SIZES = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'Free Size'];
 
 const CATEGORY_TAGS: Record<string, string[]> = {
   accessories: ['korean', 'hair', 'cute', 'aesthetic', 'minimal', 'clip', 'pin', 'bow', 'pearl', 'vintage'],
   dresses: ['korean', 'fashion', 'floral', 'summer', 'casual', 'chic', 'midi', 'mini', 'elegant', 'trendy'],
   stationery: ['kawaii', 'pastel', 'journal', 'planner', 'notebook', 'cute', 'aesthetic', 'study'],
-  beauty: ['kbeauty', 'skincare', 'glow', 'serum', 'toner', 'mask', 'korean', 'moisturizer'],
-  gifts: ['gift', 'birthday', 'surprise', 'set', 'hamper', 'cute', 'korean', 'special'],
 };
 
 function generateSKU(name: string, category: string): string {
@@ -49,7 +57,7 @@ function generateSKU(name: string, category: string): string {
 }
 
 const EMPTY_FORM = {
-  name: '', description: '', category: 'accessories', price: '', discountPrice: '',
+  name: '', description: '', category: 'accessories', subcategory: '', price: '', discountPrice: '',
   stock: '', colors: '', sku: '',
   isFeatured: false, isNew: true, isTrending: false, isActive: true, gstEnabled: true,
 };
@@ -213,12 +221,13 @@ export default function AdminProductsPage() {
     }
     setSaving(true);
     try {
-      const { isNew: isNewVal, ...restForm } = form;
+      const { isNew: isNewVal, subcategory: subcat, ...restForm } = form;
       const { gstEnabled: gstVal, ...payloadRest } = restForm;
       const payload = {
         ...payloadRest,
         isNewProduct: isNewVal,
         gstEnabled: gstVal,
+        subcategory: form.category === 'accessories' && subcat ? subcat : undefined,
         price: Number(form.price),
         discountPrice: form.discountPrice ? Number(form.discountPrice) : undefined,
         stock: Number(form.stock),
@@ -253,6 +262,7 @@ export default function AdminProductsPage() {
       name: p.name,
       description: p.description || '',
       category: p.category,
+      subcategory: p.subcategory || '',
       price: String(p.price),
       discountPrice: String(p.discountPrice || ''),
       stock: String(p.stock),
@@ -411,14 +421,31 @@ export default function AdminProductsPage() {
                   <label className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-1.5 block">Category *</label>
                   <select
                     value={form.category}
-                    onChange={(e) => { setForm({ ...form, category: e.target.value }); setTags([]); }}
+                    onChange={(e) => { setForm({ ...form, category: e.target.value, subcategory: '' }); setTags([]); }}
                     className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-rose-300 bg-white"
                   >
-                    {['accessories', 'dresses', 'stationery', 'beauty', 'gifts'].map(c => (
+                    {['accessories', 'dresses', 'stationery'].map(c => (
                       <option key={c} value={c}>{c.charAt(0).toUpperCase() + c.slice(1)}</option>
                     ))}
                   </select>
                 </div>
+
+                {/* Subcategory (only for accessories) */}
+                {form.category === 'accessories' && (
+                  <div>
+                    <label className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-1.5 block">Subcategory</label>
+                    <select
+                      value={form.subcategory}
+                      onChange={(e) => setForm({ ...form, subcategory: e.target.value })}
+                      className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-rose-300 bg-white"
+                    >
+                      <option value="">Select subcategory...</option>
+                      {ACCESSORIES_SUBCATEGORIES.map(sc => (
+                        <option key={sc} value={sc}>{SUBCATEGORY_LABELS[sc]}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
 
                 {/* Price */}
                 <div>
