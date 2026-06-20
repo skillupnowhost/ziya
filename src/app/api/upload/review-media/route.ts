@@ -1,23 +1,33 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getUserFromRequest } from '@/lib/auth';
+import { supabase } from '@/lib/supabase';
 
+const BUCKET = 'products';
 const MAX_IMAGE_SIZE = 5 * 1024 * 1024;  // 5 MB
 const MAX_VIDEO_SIZE = 50 * 1024 * 1024; // 50 MB
 
-async function saveLocalFile(file: File, subfolder: string): Promise<string> {
-  const { default: path } = await import('path');
-  const { default: fs } = await import('fs/promises');
-  const { existsSync } = await import('fs');
+async function uploadToSupabase(file: File, subfolder: string): Promise<string> {
+  const ext = file.name.split('.').pop()?.toLowerCase() || 'bin';
+  const filename = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+  const filePath = `${subfolder}/${filename}`;
 
-  const uploadDir = path.join(process.cwd(), 'public', 'uploads', subfolder);
-  if (!existsSync(uploadDir)) await fs.mkdir(uploadDir, { recursive: true });
-
-  const ext = path.extname(file.name).toLowerCase() || '.bin';
-  const filename = `${Date.now()}-${Math.random().toString(36).slice(2)}${ext}`;
-  const filePath = path.join(uploadDir, filename);
   const bytes = await file.arrayBuffer();
-  await fs.writeFile(filePath, Buffer.from(bytes));
-  return `/uploads/${subfolder}/${filename}`;
+  const buffer = Buffer.from(bytes);
+
+  const { error } = await supabase.storage
+    .from(BUCKET)
+    .upload(filePath, buffer, {
+      contentType: file.type,
+      upsert: false,
+    });
+
+  if (error) throw new Error(`Supabase upload failed: ${error.message}`);
+
+  const { data: { publicUrl } } = supabase.storage
+    .from(BUCKET)
+    .getPublicUrl(filePath);
+
+  return publicUrl;
 }
 
 export async function POST(req: NextRequest) {
@@ -47,7 +57,8 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const url = await saveLocalFile(file, isVideo ? 'review-videos' : 'review-images');
+    const subfolder = isVideo ? 'review-videos' : 'review-images';
+    const url = await uploadToSupabase(file, subfolder);
 
     return NextResponse.json({ url, type: isVideo ? 'video' : 'image' });
   } catch (err) {

@@ -2,20 +2,30 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabase, mapRow } from '@/lib/supabase';
 import { getUserFromRequest } from '@/lib/auth';
 
-async function saveLocalAvatar(file: File, userId: string): Promise<string> {
-  const { default: path } = await import('path');
-  const { default: fs } = await import('fs/promises');
-  const { existsSync } = await import('fs');
+const BUCKET = 'products';
 
-  const uploadDir = path.join(process.cwd(), 'public', 'uploads', 'avatars');
-  if (!existsSync(uploadDir)) await fs.mkdir(uploadDir, { recursive: true });
+async function uploadAvatar(file: File, userId: string): Promise<string> {
+  const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg';
+  const filename = `${userId}-${Date.now()}.${ext}`;
+  const filePath = `avatars/${filename}`;
 
-  const ext = path.extname(file.name).toLowerCase() || '.jpg';
-  const filename = `${userId}-${Date.now()}${ext}`;
-  const filePath = path.join(uploadDir, filename);
   const bytes = await file.arrayBuffer();
-  await fs.writeFile(filePath, Buffer.from(bytes));
-  return `/uploads/avatars/${filename}`;
+  const buffer = Buffer.from(bytes);
+
+  const { error } = await supabase.storage
+    .from(BUCKET)
+    .upload(filePath, buffer, {
+      contentType: file.type || 'image/jpeg',
+      upsert: false,
+    });
+
+  if (error) throw new Error(`Supabase upload failed: ${error.message}`);
+
+  const { data: { publicUrl } } = supabase.storage
+    .from(BUCKET)
+    .getPublicUrl(filePath);
+
+  return publicUrl;
 }
 
 export async function POST(req: NextRequest) {
@@ -33,7 +43,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'File too large. Max 5MB.' }, { status: 400 });
     }
 
-    const avatarUrl = await saveLocalAvatar(file, payload.id as string);
+    const avatarUrl = await uploadAvatar(file, payload.id as string);
 
     const { data: row, error } = await supabase
       .from('users')

@@ -1,31 +1,36 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getUserFromRequest } from '@/lib/auth';
-import path from 'path';
-import fs from 'fs/promises';
-import { existsSync } from 'fs';
+import { supabase } from '@/lib/supabase';
 
-const UPLOAD_DIR = path.join(process.cwd(), 'public', 'uploads', 'products');
-
-async function ensureUploadDir() {
-  if (!existsSync(UPLOAD_DIR)) {
-    await fs.mkdir(UPLOAD_DIR, { recursive: true });
-  }
-}
+const BUCKET = 'products';
 
 function generateFilename(originalName: string): string {
-  const ext = path.extname(originalName).toLowerCase() || '.jpg';
+  const ext = originalName.split('.').pop()?.toLowerCase() || 'jpg';
   const timestamp = Date.now();
   const random = Math.random().toString(36).slice(2, 8);
-  return `${timestamp}-${random}${ext}`;
+  return `${timestamp}-${random}.${ext}`;
 }
 
-async function saveLocalFile(file: File): Promise<string> {
+async function uploadToSupabase(file: File): Promise<string> {
   const bytes = await file.arrayBuffer();
   const buffer = Buffer.from(bytes);
   const filename = generateFilename(file.name);
-  const filePath = path.join(UPLOAD_DIR, filename);
-  await fs.writeFile(filePath, buffer);
-  return `/uploads/products/${filename}`;
+  const filePath = `products/${filename}`;
+
+  const { error } = await supabase.storage
+    .from(BUCKET)
+    .upload(filePath, buffer, {
+      contentType: file.type || 'image/jpeg',
+      upsert: false,
+    });
+
+  if (error) throw new Error(`Supabase upload failed: ${error.message}`);
+
+  const { data: { publicUrl } } = supabase.storage
+    .from(BUCKET)
+    .getPublicUrl(filePath);
+
+  return publicUrl;
 }
 
 export async function POST(req: NextRequest) {
@@ -42,8 +47,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'No files provided' }, { status: 400 });
     }
 
-    await ensureUploadDir();
-    const urls = await Promise.all(files.map(saveLocalFile));
+    const urls = await Promise.all(files.map(uploadToSupabase));
 
     return NextResponse.json({ urls });
   } catch (error) {
