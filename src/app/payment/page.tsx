@@ -15,6 +15,8 @@ import {
   ChevronDownIcon,
   ChevronUpIcon,
   ArrowLeftIcon,
+  ExclamationTriangleIcon,
+  ShoppingBagIcon,
 } from '@heroicons/react/24/outline';
 import {
   CheckCircleIcon,
@@ -36,6 +38,9 @@ interface Order {
   subtotal: number;
   shippingCost: number;
   discount: number;
+  cgst: number;
+  sgst: number;
+  gst: number;
   promoCode?: string;
   paymentMethod: string;
   paymentStatus: string;
@@ -63,6 +68,7 @@ function PaymentContent() {
   const [paying, setPaying] = useState(false);
   const [error, setError] = useState('');
   const [itemsExpanded, setItemsExpanded] = useState(true);
+  const [showCancelModal, setShowCancelModal] = useState(false);
 
   useEffect(() => {
     if (!user) {
@@ -164,7 +170,7 @@ function PaymentContent() {
         modal: {
           ondismiss: () => {
             setPaying(false);
-            toast.error('Payment cancelled');
+            setShowCancelModal(true);
           },
         },
       };
@@ -363,6 +369,24 @@ function PaymentContent() {
                     ₹{Number(order.subtotal).toLocaleString('en-IN')}
                   </span>
                 </div>
+                {order.gst > 0 && (
+                  <>
+                    <div className="flex justify-between text-xs text-gray-400">
+                      <span>CGST</span>
+                      <span>₹{Number(order.cgst).toLocaleString('en-IN')}</span>
+                    </div>
+                    <div className="flex justify-between text-xs text-gray-400">
+                      <span>SGST</span>
+                      <span>₹{Number(order.sgst).toLocaleString('en-IN')}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-500">GST</span>
+                      <span className="text-gray-800 font-medium">
+                        ₹{Number(order.gst).toLocaleString('en-IN')}
+                      </span>
+                    </div>
+                  </>
+                )}
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-500">Shipping</span>
                   <span className={order.shippingCost === 0 ? 'text-emerald-600 font-medium' : 'text-gray-800 font-medium'}>
@@ -456,6 +480,12 @@ function PaymentContent() {
                         <span>Subtotal</span>
                         <span>₹{Number(order.subtotal).toLocaleString('en-IN')}</span>
                       </div>
+                      {order.gst > 0 && (
+                        <div className="flex justify-between text-gray-500">
+                          <span>GST</span>
+                          <span>₹{Number(order.gst).toLocaleString('en-IN')}</span>
+                        </div>
+                      )}
                       {order.shippingCost > 0 && (
                         <div className="flex justify-between text-gray-500">
                           <span>Shipping</span>
@@ -591,6 +621,61 @@ function PaymentContent() {
 
       {/* Bottom spacer for mobile fixed bar */}
       <div className="lg:hidden h-20" />
+
+      {/* Payment Cancelled Modal */}
+      <AnimatePresence>
+        {showCancelModal && (
+          <motion.div
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={(e) => { if (e.target === e.currentTarget) setShowCancelModal(false); }}
+          >
+            <motion.div
+              className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6 text-center"
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+            >
+              <div className="w-14 h-14 mx-auto mb-4 rounded-full bg-amber-50 flex items-center justify-center">
+                <ExclamationTriangleIcon className="w-7 h-7 text-amber-500" />
+              </div>
+              <h3 className="text-lg font-bold text-gray-900 mb-1">Payment Cancelled</h3>
+              <p className="text-sm text-gray-500 mb-6 leading-relaxed">
+                Your order is saved. Would you like to retry payment or continue shopping?
+              </p>
+              <div className="flex flex-col gap-2.5">
+                <button
+                  type="button"
+                  onClick={() => { setShowCancelModal(false); handlePay(); }}
+                  className="w-full py-3 rounded-xl font-bold text-white text-sm bg-gradient-to-r from-rose-500 to-rose-600 hover:from-rose-600 hover:to-rose-700 shadow-sm shadow-rose-200 transition-all flex items-center justify-center gap-2"
+                >
+                  <LockClosedIcon className="w-4 h-4" />
+                  Retry Payment
+                </button>
+                <button
+                  type="button"
+                  onClick={() => router.push('/orders')}
+                  className="w-full py-3 rounded-xl font-semibold text-sm border-2 border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors flex items-center justify-center gap-2"
+                >
+                  <ArrowLeftIcon className="w-4 h-4" />
+                  View My Orders
+                </button>
+                <button
+                  type="button"
+                  onClick={() => router.push('/products')}
+                  className="w-full py-2.5 text-sm text-gray-400 hover:text-gray-600 transition-colors flex items-center justify-center gap-1.5"
+                >
+                  <ShoppingBagIcon className="w-3.5 h-3.5" />
+                  Continue Shopping
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

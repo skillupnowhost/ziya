@@ -17,6 +17,7 @@ import {
   CreditCardIcon,
   BanknotesIcon,
   SparklesIcon,
+  LockClosedIcon,
 } from '@heroicons/react/24/outline';
 import {
   CheckCircleIcon as CheckCircleSolid,
@@ -431,6 +432,25 @@ export default function OrdersPage() {
                             </div>
                           </div>
                         </div>
+
+                        {/* Pay Now button for pending Razorpay payments */}
+                        {order.paymentStatus === 'pending' && order.paymentMethod === 'razorpay' && order.status !== 'cancelled' && (
+                          <motion.div
+                            className="mb-3"
+                            initial={{ opacity: 0, y: 4 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 0.25 }}
+                          >
+                            <button
+                              type="button"
+                              onClick={(e) => { e.preventDefault(); e.stopPropagation(); router.push(`/payment?orderId=${order._id}`); }}
+                              className="flex items-center justify-center gap-2 w-full py-2.5 bg-gradient-to-r from-rose-500 to-rose-600 text-white text-xs font-bold rounded-xl shadow-sm shadow-rose-200 hover:from-rose-600 hover:to-rose-700 transition-all"
+                            >
+                              <LockClosedIcon className="w-3.5 h-3.5" />
+                              Pay Now · ₹{order.total.toLocaleString()}
+                            </button>
+                          </motion.div>
+                        )}
 
                         {/* Bottom: Item count + Total + Arrow */}
                         <div className="flex items-center justify-between">

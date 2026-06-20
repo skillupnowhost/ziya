@@ -1,6 +1,7 @@
 'use client';
 import Link from 'next/link';
 import { useState, useEffect, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import { ShoppingBagIcon, StarIcon, ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
 import { HeartIcon as HeartSolid } from '@heroicons/react/24/solid';
 import { HeartIcon } from '@heroicons/react/24/outline';
@@ -28,6 +29,7 @@ export default function ProductCard({ product }: { product: Product }) {
   const [hovered, setHovered] = useState(false);
   const [cartPopping, setCartPopping] = useState(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const router = useRouter();
   const { addItem, items: cartItems } = useCart();
   const { toggle, isWishlisted } = useWishlist();
   const inCart = cartItems.some((i) => i.productId === product._id);
@@ -197,14 +199,14 @@ export default function ProductCard({ product }: { product: Product }) {
           {product.stock > 0 && (
             <div className="absolute bottom-0 left-0 right-0 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out px-3 pb-3">
               {inCart ? (
-                <Link
-                  href="/cart"
-                  onClick={(e) => e.stopPropagation()}
+                <button
+                  type="button"
+                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); router.push('/cart'); }}
                   className="flex items-center justify-center gap-2 w-full py-2.5 rounded-2xl text-sm font-semibold shadow-lg bg-emerald-500 hover:bg-emerald-600 text-white transition-all duration-200"
                 >
                   <ShoppingBagIcon className="w-4 h-4" />
                   In Cart · View →
-                </Link>
+                </button>
               ) : (
                 <button
                   onClick={handleAddToCart}

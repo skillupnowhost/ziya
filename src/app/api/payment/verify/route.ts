@@ -35,6 +35,42 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Order not found' }, { status: 404 });
     }
 
+    // Auto-save shipping address to user's saved addresses
+    try {
+      const shippingAddress = orderRow.shipping_address as Record<string, string> | null;
+      if (shippingAddress) {
+        const { data: userData } = await supabase
+          .from('users')
+          .select('addresses')
+          .eq('id', payload.id as string)
+          .maybeSingle();
+
+        const savedAddresses = (userData?.addresses as Record<string, string>[] | null) || [];
+        const isDuplicate = savedAddresses.some((a) => {
+          const addrKeys = ['doorNumber', 'streetName', 'city', 'state', 'pincode'] as const;
+          return addrKeys.every((k) => (a[k] || '').toLowerCase().trim() === (shippingAddress[k] || '').toLowerCase().trim());
+        });
+
+        if (!isDuplicate) {
+          const newAddr = {
+            doorNumber: shippingAddress.doorNumber || '',
+            streetName: shippingAddress.streetName || '',
+            landmark: shippingAddress.landmark || '',
+            city: shippingAddress.city || '',
+            state: shippingAddress.state || '',
+            pincode: shippingAddress.pincode || '',
+            country: shippingAddress.country || 'India',
+          };
+          await supabase
+            .from('users')
+            .update({ addresses: [...savedAddresses, newAddr] })
+            .eq('id', payload.id as string);
+        }
+      }
+    } catch (addrErr) {
+      console.error('Auto-save address error:', addrErr);
+    }
+
     // Deduct stock for each item and check for out-of-stock
     const items = orderRow.items as { productId: string; quantity: number; name?: string }[];
     const outOfStockProducts: string[] = [];

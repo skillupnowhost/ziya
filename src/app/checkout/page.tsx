@@ -57,6 +57,8 @@ function CheckoutContent() {
     pincode: '',
     country: 'India',
   });
+  const [savedAddresses, setSavedAddresses] = useState<{ doorNumber: string; streetName: string; landmark: string; city: string; state: string; pincode: string; country: string }[]>([]);
+  const [showSavedAddresses, setShowSavedAddresses] = useState(false);
 
   const discount = (() => {
     if (!appliedPromo) return 0;
@@ -87,6 +89,18 @@ function CheckoutContent() {
 
   useEffect(() => {
     if (user?.name) setAddress((prev) => ({ ...prev, name: prev.name || user.name }));
+  }, [user]);
+
+  useEffect(() => {
+    if (user) {
+      axios.get('/api/auth/me')
+        .then((r) => {
+          const addrs = r.data.user.addresses || [];
+          setSavedAddresses(addrs);
+          if (addrs.length > 0) setShowSavedAddresses(true);
+        })
+        .catch(() => {});
+    }
   }, [user]);
 
   useEffect(() => {
@@ -195,6 +209,66 @@ function CheckoutContent() {
                 <p className="text-xs text-gray-400">We&apos;ll deliver your order here</p>
               </div>
             </div>
+
+            {savedAddresses.length > 0 && (
+              <div className="mb-5">
+                <button
+                  type="button"
+                  onClick={() => setShowSavedAddresses(!showSavedAddresses)}
+                  className="flex items-center gap-2 text-xs font-semibold text-rose-500 hover:text-rose-600 transition-colors mb-3"
+                >
+                  <MapPinIcon className="w-3.5 h-3.5" />
+                  {showSavedAddresses ? 'Hide saved addresses' : `Use a saved address (${savedAddresses.length})`}
+                </button>
+                <AnimatePresence>
+                  {showSavedAddresses && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      exit={{ opacity: 0, height: 0 }}
+                      transition={{ duration: 0.25 }}
+                      className="overflow-hidden"
+                    >
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        {savedAddresses.map((addr, i) => (
+                          <motion.button
+                            key={i}
+                            type="button"
+                            onClick={() => {
+                              setAddress((prev) => ({
+                                ...prev,
+                                doorNumber: addr.doorNumber || '',
+                                streetName: addr.streetName || '',
+                                landmark: addr.landmark || '',
+                                city: addr.city || '',
+                                state: addr.state || '',
+                                pincode: addr.pincode || '',
+                                country: addr.country || 'India',
+                              }));
+                              setShowSavedAddresses(false);
+                              toast.success('Address filled');
+                            }}
+                            className="text-left p-3 rounded-xl border-2 border-gray-100 hover:border-rose-300 hover:bg-rose-50/50 transition-all"
+                            initial={{ opacity: 0, y: 6 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: i * 0.05 }}
+                            whileHover={{ scale: 1.01 }}
+                            whileTap={{ scale: 0.98 }}
+                          >
+                            <p className="text-xs font-semibold text-gray-800 line-clamp-1">
+                              {addr.doorNumber}{addr.streetName ? `, ${addr.streetName}` : ''}
+                            </p>
+                            <p className="text-[11px] text-gray-400 mt-0.5 line-clamp-1">
+                              {[addr.city, addr.state, addr.pincode].filter(Boolean).join(', ')}
+                            </p>
+                          </motion.button>
+                        ))}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            )}
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {ADDRESS_FIELDS.map((field, i) => (

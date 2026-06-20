@@ -4,7 +4,7 @@ import { useParams } from 'next/navigation';
 import axios from 'axios';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { ChatBubbleLeftEllipsisIcon, MapPinIcon, CreditCardIcon, CheckIcon, PencilSquareIcon, XMarkIcon, TruckIcon, ArrowTopRightOnSquareIcon, ChevronLeftIcon, DocumentArrowDownIcon, ArrowDownTrayIcon } from '@heroicons/react/24/outline';
+import { ChatBubbleLeftEllipsisIcon, MapPinIcon, CreditCardIcon, CheckIcon, PencilSquareIcon, XMarkIcon, TruckIcon, ArrowTopRightOnSquareIcon, ChevronLeftIcon, DocumentArrowDownIcon, ArrowDownTrayIcon, LockClosedIcon } from '@heroicons/react/24/outline';
 import { getCourierTrackUrl, getCourierName } from '@/lib/couriers';
 import { downloadInvoicePDF } from '@/lib/generateInvoicePDF';
 
@@ -386,6 +386,15 @@ export default function OrderDetailPage() {
                   {order.paymentStatus}
                 </motion.span>
               </div>
+              {order.paymentStatus === 'pending' && order.paymentMethod === 'razorpay' && order.status !== 'cancelled' && (
+                <Link
+                  href={`/payment?orderId=${order._id}`}
+                  className="mt-2 w-full flex items-center justify-center gap-2 py-3 bg-gradient-to-r from-rose-500 to-rose-600 text-white text-xs font-bold rounded-xl shadow-sm shadow-rose-200 hover:from-rose-600 hover:to-rose-700 transition-all"
+                >
+                  <LockClosedIcon className="w-3.5 h-3.5" />
+                  Complete Payment · ₹{order.total.toLocaleString()}
+                </Link>
+              )}
               {order.trackingNumber && (
                 <div className="pt-2 border-t border-gray-100 space-y-2">
                   <div className="flex justify-between">

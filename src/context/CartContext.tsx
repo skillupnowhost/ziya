@@ -105,8 +105,8 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     if (i.gstEnabled === false) return acc;
     const gstRate = i.price < 1000 ? 5 : 12;
     const lineTotal = i.price * i.quantity;
-    acc.totalCgst += Math.round(lineTotal * (gstRate / 2) / 100);
-    acc.totalSgst += Math.round(lineTotal * (gstRate / 2) / 100);
+    acc.totalCgst += Math.ceil(lineTotal * (gstRate / 2) / 100);
+    acc.totalSgst += Math.ceil(lineTotal * (gstRate / 2) / 100);
     return acc;
   }, { totalCgst: 0, totalSgst: 0 });
   const cgst = totalCgst;

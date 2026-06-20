@@ -79,8 +79,8 @@ export async function POST(req: NextRequest) {
         // 5% GST for items priced below ₹1000, 12% for ₹1000+
         const gstRate = price < 1000 ? 5 : 12;
         const halfRate = gstRate / 2;
-        totalCgst += Math.round(lineTotal * halfRate / 100);
-        totalSgst += Math.round(lineTotal * halfRate / 100);
+        totalCgst += Math.ceil(lineTotal * halfRate / 100);
+        totalSgst += Math.ceil(lineTotal * halfRate / 100);
       }
 
       const images = product.images as string[];
@@ -194,6 +194,39 @@ export async function POST(req: NextRequest) {
     }
 
     const order = mapRow(orderRow);
+
+    // Auto-save shipping address to user's saved addresses
+    try {
+      const { data: userData } = await supabase
+        .from('users')
+        .select('addresses')
+        .eq('id', payload.id as string)
+        .maybeSingle();
+
+      const savedAddresses = (userData?.addresses as Record<string, string>[] | null) || [];
+      const isDuplicate = savedAddresses.some((a) => {
+        const addrKeys = ['doorNumber', 'streetName', 'city', 'state', 'pincode'] as const;
+        return addrKeys.every((k) => (a[k] || '').toLowerCase().trim() === ((shippingAddress[k] as string) || '').toLowerCase().trim());
+      });
+
+      if (!isDuplicate) {
+        const newAddr = {
+          doorNumber: shippingAddress.doorNumber || '',
+          streetName: shippingAddress.streetName || '',
+          landmark: shippingAddress.landmark || '',
+          city: shippingAddress.city || '',
+          state: shippingAddress.state || '',
+          pincode: shippingAddress.pincode || '',
+          country: shippingAddress.country || 'India',
+        };
+        await supabase
+          .from('users')
+          .update({ addresses: [...savedAddresses, newAddr] })
+          .eq('id', payload.id as string);
+      }
+    } catch (addrErr) {
+      console.error('Auto-save address error:', addrErr);
+    }
 
     // Deduct stock immediately for COD only
     if (paymentMethod === 'cod') {
