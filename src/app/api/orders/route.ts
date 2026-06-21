@@ -100,7 +100,9 @@ export async function POST(req: NextRequest) {
     const sgst = totalSgst;
     const gst = cgst + sgst;
 
-    const shippingCost = subtotal >= 999 ? 0 : 99;
+    const customerState = ((shippingAddress?.state as string) || '').trim().toLowerCase().replace(/\s+/g, '');
+    const isTamilNadu = customerState === 'tamilnadu' || customerState === 'tn';
+    const shippingCost = subtotal >= 999 ? 0 : (isTamilNadu ? 79 : 99);
     let discount = 0;
 
     let newsletterCoupon: Record<string, unknown> | null = null;

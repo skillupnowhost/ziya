@@ -1,7 +1,8 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useCart } from '@/context/CartContext';
+import { useAuth } from '@/context/AuthContext';
 import { TrashIcon, MinusIcon, PlusIcon, TagIcon, ArrowRightIcon, ArrowLeftIcon, ShoppingBagIcon } from '@heroicons/react/24/outline';
 import { XCircleIcon } from '@heroicons/react/24/solid';
 import toast from 'react-hot-toast';
@@ -9,13 +10,27 @@ import { motion, AnimatePresence } from 'framer-motion';
 import ConfirmDialog from '@/components/ConfirmDialog';
 
 export default function CartPage() {
-  const { items, removeItem, updateQuantity, clearCart, subtotal, shippingCost, total, cgst, sgst, gst } = useCart();
+  const { items, removeItem, updateQuantity, clearCart, subtotal, shippingCost, total, cgst, sgst, gst, setShippingState } = useCart();
+  const { user } = useAuth();
   const [promoCode, setPromoCode] = useState('');
   const [appliedPromo, setAppliedPromo] = useState('');
   const [discount, setDiscount] = useState(0);
   const [validating, setValidating] = useState(false);
   const [showClearDialog, setShowClearDialog] = useState(false);
   const [removeTarget, setRemoveTarget] = useState<{ productId: string; size?: string } | null>(null);
+
+  useEffect(() => {
+    if (!user) return;
+    fetch('/api/auth/me')
+      .then((r) => r.json())
+      .then((data) => {
+        const addrs = data.user?.addresses || [];
+        if (addrs.length > 0 && addrs[0].state) {
+          setShippingState(addrs[0].state);
+        }
+      })
+      .catch(() => {});
+  }, [user, setShippingState]);
 
   const applyPromo = async () => {
     const code = promoCode.trim().toUpperCase();

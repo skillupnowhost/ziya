@@ -28,12 +28,20 @@ interface CartContextType {
   cgst: number;
   sgst: number;
   gst: number;
+  shippingState: string;
+  setShippingState: (state: string) => void;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
+function isTamilNadu(state: string): boolean {
+  const normalized = state.trim().toLowerCase().replace(/\s+/g, '');
+  return normalized === 'tamilnadu' || normalized === 'tn';
+}
+
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
+  const [shippingState, setShippingState] = useState('');
   const { user, loading } = useAuth();
 
   // Load cart from user-scoped storage; clear when logged out
@@ -112,12 +120,12 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const cgst = totalCgst;
   const sgst = totalSgst;
   const gst = cgst + sgst;
-  const shippingCost = subtotal >= 999 ? 0 : items.length > 0 ? 99 : 0;
+  const shippingCost = subtotal >= 999 ? 0 : items.length > 0 ? (isTamilNadu(shippingState) ? 79 : 99) : 0;
   const total = subtotal + gst + shippingCost;
   const itemCount = items.length;
 
   return (
-    <CartContext.Provider value={{ items, addItem, removeItem, updateQuantity, clearCart, total, subtotal, itemCount, shippingCost, cgst, sgst, gst }}>
+    <CartContext.Provider value={{ items, addItem, removeItem, updateQuantity, clearCart, total, subtotal, itemCount, shippingCost, cgst, sgst, gst, shippingState, setShippingState }}>
       {children}
     </CartContext.Provider>
   );

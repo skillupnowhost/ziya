@@ -38,7 +38,7 @@ const faqJsonLd = {
       name: "Is there free shipping on Ziyakart?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "Yes! All orders above ₹999 qualify for free standard shipping. Orders below ₹999 have a flat ₹99 shipping fee.",
+        text: "Yes! All orders above ₹999 qualify for free standard shipping. Orders below ₹999 have a shipping fee of ₹79 within Tamil Nadu and ₹99 for the rest of India.",
       },
     },
     {

@@ -14,6 +14,9 @@ import {
   CreditCardIcon,
   BanknotesIcon,
   ShieldCheckIcon,
+  ChevronUpDownIcon,
+  CheckIcon,
+  MagnifyingGlassIcon,
 } from '@heroicons/react/24/outline';
 
 const ADDRESS_FIELDS = [
@@ -23,16 +26,34 @@ const ADDRESS_FIELDS = [
   { key: 'streetName',  label: 'Street Name',          placeholder: 'Street or area name', full: false },
   { key: 'landmark',    label: 'Landmark (optional)',   placeholder: 'Near park, school…',  full: true  },
   { key: 'city',        label: 'City',                 placeholder: 'City',                full: false },
-  { key: 'state',       label: 'State',                placeholder: 'State',               full: false },
+  { key: 'state',       label: 'State',                placeholder: 'Select State',        full: false },
   { key: 'pincode',     label: 'PIN Code',             placeholder: '6-digit PIN',         full: false },
 ] as const;
+
+const INDIAN_STATES = [
+  'Andhra Pradesh', 'Arunachal Pradesh', 'Assam', 'Bihar', 'Chhattisgarh',
+  'Goa', 'Gujarat', 'Haryana', 'Himachal Pradesh', 'Jharkhand',
+  'Karnataka', 'Kerala', 'Madhya Pradesh', 'Maharashtra', 'Manipur',
+  'Meghalaya', 'Mizoram', 'Nagaland', 'Odisha', 'Punjab',
+  'Rajasthan', 'Sikkim', 'Tamil Nadu', 'Telangana', 'Tripura',
+  'Uttar Pradesh', 'Uttarakhand', 'West Bengal',
+  'Andaman and Nicobar Islands', 'Chandigarh',
+  'Dadra and Nagar Haveli and Daman and Diu', 'Delhi',
+  'Jammu and Kashmir', 'Ladakh', 'Lakshadweep', 'Puducherry',
+];
+
+function matchIndianState(input: string): string {
+  if (!input) return '';
+  const norm = input.trim().toLowerCase().replace(/\s+/g, '');
+  return INDIAN_STATES.find((s) => s.toLowerCase().replace(/\s+/g, '') === norm) || input;
+}
 
 type PaymentMethod = 'razorpay' | 'cod';
 
 function CheckoutContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const { items, subtotal, shippingCost, clearCart, cgst, sgst, gst } = useCart();
+  const { items, subtotal, shippingCost, clearCart, cgst, sgst, gst, setShippingState } = useCart();
   const { user } = useAuth();
 
   const [promoInput, setPromoInput] = useState(searchParams.get('promo') || '');
@@ -59,6 +80,10 @@ function CheckoutContent() {
   });
   const [savedAddresses, setSavedAddresses] = useState<{ doorNumber: string; streetName: string; landmark: string; city: string; state: string; pincode: string; country: string }[]>([]);
   const [showSavedAddresses, setShowSavedAddresses] = useState(false);
+  const [stateDropdownOpen, setStateDropdownOpen] = useState(false);
+  const [stateSearch, setStateSearch] = useState('');
+  const stateDropdownRef = useRef<HTMLDivElement>(null);
+  const stateSearchRef = useRef<HTMLInputElement>(null);
 
   const discount = (() => {
     if (!appliedPromo) return 0;
@@ -102,6 +127,36 @@ function CheckoutContent() {
         .catch(() => {});
     }
   }, [user]);
+
+  useEffect(() => {
+    setShippingState(address.state);
+  }, [address.state, setShippingState]);
+
+  useEffect(() => {
+    return () => setShippingState('');
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (stateDropdownRef.current && !stateDropdownRef.current.contains(e.target as Node)) {
+        setStateDropdownOpen(false);
+        setStateSearch('');
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  useEffect(() => {
+    if (stateDropdownOpen && stateSearchRef.current) {
+      stateSearchRef.current.focus();
+    }
+  }, [stateDropdownOpen]);
+
+  const filteredStates = INDIAN_STATES.filter((s) =>
+    s.toLowerCase().includes(stateSearch.toLowerCase())
+  );
 
   useEffect(() => {
     const urlPromo = searchParams.get('promo');
@@ -241,7 +296,7 @@ function CheckoutContent() {
                                 streetName: addr.streetName || '',
                                 landmark: addr.landmark || '',
                                 city: addr.city || '',
-                                state: addr.state || '',
+                                state: matchIndianState(addr.state || ''),
                                 pincode: addr.pincode || '',
                                 country: addr.country || 'India',
                               }));
@@ -283,13 +338,91 @@ function CheckoutContent() {
                     {field.label}
                     {field.key !== 'landmark' && <span className="text-rose-400 ml-0.5">*</span>}
                   </label>
-                  <input
-                    type="text"
-                    value={address[field.key as keyof typeof address]}
-                    onChange={(e) => setAddress({ ...address, [field.key]: e.target.value })}
-                    placeholder={field.placeholder}
-                    className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-rose-300 focus:ring-2 focus:ring-rose-100 transition-all placeholder:text-gray-300"
-                  />
+
+                  {field.key === 'state' ? (
+                    <div ref={stateDropdownRef} className="relative">
+                      <button
+                        type="button"
+                        onClick={() => { setStateDropdownOpen(!stateDropdownOpen); setStateSearch(''); }}
+                        className={`w-full px-4 py-3 border rounded-xl text-sm text-left transition-all flex items-center justify-between ${
+                          stateDropdownOpen
+                            ? 'border-rose-300 ring-2 ring-rose-100'
+                            : 'border-gray-200 hover:border-gray-300'
+                        }`}
+                      >
+                        <span className={address.state ? 'text-gray-900' : 'text-gray-300'}>
+                          {address.state || 'Select State'}
+                        </span>
+                        <ChevronUpDownIcon className={`w-4 h-4 transition-colors ${stateDropdownOpen ? 'text-rose-400' : 'text-gray-400'}`} />
+                      </button>
+
+                      <AnimatePresence>
+                        {stateDropdownOpen && (
+                          <motion.div
+                            initial={{ opacity: 0, y: -8, scale: 0.98 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            exit={{ opacity: 0, y: -8, scale: 0.98 }}
+                            transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
+                            className="absolute z-50 mt-1.5 w-full bg-white border border-gray-200 rounded-xl shadow-xl shadow-gray-200/50 overflow-hidden"
+                          >
+                            <div className="p-2 border-b border-gray-100">
+                              <div className="relative">
+                                <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
+                                <input
+                                  ref={stateSearchRef}
+                                  type="text"
+                                  value={stateSearch}
+                                  onChange={(e) => setStateSearch(e.target.value)}
+                                  placeholder="Search state..."
+                                  className="w-full pl-8 pr-3 py-2 text-sm bg-gray-50 border border-gray-100 rounded-lg focus:outline-none focus:border-rose-300 focus:bg-white transition-all placeholder:text-gray-400"
+                                />
+                              </div>
+                            </div>
+                            <div className="max-h-52 overflow-y-auto overscroll-contain">
+                              {filteredStates.length === 0 ? (
+                                <p className="px-4 py-3 text-sm text-gray-400 text-center">No states found</p>
+                              ) : (
+                                filteredStates.map((s) => (
+                                  <button
+                                    key={s}
+                                    type="button"
+                                    onClick={() => {
+                                      setAddress({ ...address, state: s });
+                                      setStateDropdownOpen(false);
+                                      setStateSearch('');
+                                    }}
+                                    className={`w-full text-left px-4 py-2.5 text-sm transition-colors flex items-center gap-2 ${
+                                      address.state === s
+                                        ? 'bg-rose-50 text-rose-600 font-medium'
+                                        : 'text-gray-700 hover:bg-gray-50'
+                                    }`}
+                                  >
+                                    <span className="flex-1">{s}</span>
+                                    {s === 'Tamil Nadu' && (
+                                      <span className="text-[10px] bg-emerald-50 text-emerald-600 px-1.5 py-0.5 rounded-full font-semibold shrink-0">
+                                        ₹79 shipping
+                                      </span>
+                                    )}
+                                    {address.state === s && (
+                                      <CheckIcon className="w-4 h-4 text-rose-500 shrink-0" />
+                                    )}
+                                  </button>
+                                ))
+                              )}
+                            </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
+                  ) : (
+                    <input
+                      type="text"
+                      value={address[field.key as keyof typeof address]}
+                      onChange={(e) => setAddress({ ...address, [field.key]: e.target.value })}
+                      placeholder={field.placeholder}
+                      className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-rose-300 focus:ring-2 focus:ring-rose-100 transition-all placeholder:text-gray-300"
+                    />
+                  )}
                 </motion.div>
               ))}
             </div>

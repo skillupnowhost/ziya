@@ -36,7 +36,7 @@ const faqCategories = [
     iconAnim: { animate: { x: [0, 4, 0, -2, 0] }, transition: { duration: 2.5, repeat: Infinity, ease: 'easeInOut' as const, repeatDelay: 1.5 } },
     questions: [
       { q: 'How long does delivery take?', a: 'Tamil Nadu: 2–3 days. South India: 2–5 days. North India: 5–8 days. Remote areas: 3–8 days. J&K / North East: 7–14 business days.' },
-      { q: 'Is there free shipping?', a: 'Yes! All orders above ₹999 qualify for free standard shipping. Orders below ₹999 have a flat ₹99 shipping fee.' },
+      { q: 'Is there free shipping?', a: 'Yes! All orders above ₹999 qualify for free standard shipping. Orders below ₹999 have a shipping fee of ₹79 within Tamil Nadu and ₹99 for the rest of India.' },
       { q: 'Do you ship internationally?', a: 'Currently, Ziya ships only within India. We\'re working on international expansion!' },
       { q: 'How is my order dispatched?', a: 'Orders placed before 2 PM on working days are dispatched the same day. Orders after 2 PM or on weekends ship the next working day.' },
     ],
