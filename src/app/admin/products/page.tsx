@@ -27,14 +27,7 @@ interface Product {
   gstEnabled: boolean;
 }
 
-const ACCESSORIES_SUBCATEGORIES = ['earring', 'bracelet', 'chain', 'hair-accessories', 'anti-tarnish-jewellery'] as const;
-const SUBCATEGORY_LABELS: Record<string, string> = {
-  'earring': 'Earring',
-  'bracelet': 'Bracelet',
-  'chain': 'Chain',
-  'hair-accessories': 'Hair Accessories',
-  'anti-tarnish-jewellery': 'Anti Tarnish Jewellery',
-};
+const ACCESSORIES_SUBCATEGORIES = ['Earring', 'Bracelet', 'Chain', 'Hair Accessories', 'Anti Tarnish Jewellery'] as const;
 
 const ALL_SIZES = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'Free Size'];
 
@@ -160,13 +153,16 @@ export default function AdminProductsPage() {
   const fetchProducts = async (p = 1) => {
     setLoading(true);
     try {
-      const params = new URLSearchParams({ page: String(p), limit: '10' });
+      const params = new URLSearchParams({ page: String(p), limit: '10', showAll: 'true' });
       if (search) params.set('search', search);
       const res = await axios.get(`/api/products?${params}`);
       setProducts(res.data.products || []);
       setTotalPages(res.data.pagination?.pages || 1);
       setPage(p);
-    } catch { toast.error('Failed to load products'); }
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error || 'Failed to load products';
+      toast.error(msg);
+    }
     finally { setLoading(false); }
   };
 
@@ -219,22 +215,31 @@ export default function AdminProductsPage() {
       toast.error('Please fill all required fields');
       return;
     }
+    if (form.category === 'accessories' && !form.subcategory) {
+      toast.error('Please select a subcategory for accessories');
+      return;
+    }
     setSaving(true);
     try {
-      const { isNew: isNewVal, subcategory: subcat, ...restForm } = form;
-      const { gstEnabled: gstVal, ...payloadRest } = restForm;
+      const skuValue = form.sku || generateSKU(form.name, form.category);
       const payload = {
-        ...payloadRest,
-        isNewProduct: isNewVal,
-        gstEnabled: gstVal,
-        subcategory: form.category === 'accessories' && subcat ? subcat : undefined,
+        name: form.name,
+        description: form.description,
+        category: form.category,
+        subcategory: form.category === 'accessories' && form.subcategory ? form.subcategory : undefined,
         price: Number(form.price),
         discountPrice: form.discountPrice ? Number(form.discountPrice) : undefined,
         stock: Number(form.stock),
+        sku: skuValue,
         sizes: selectedSizes,
         colors: form.colors ? form.colors.split(',').map(c => c.trim()).filter(Boolean) : [],
         tags,
         images,
+        isNewProduct: form.isNew,
+        isFeatured: form.isFeatured,
+        isTrending: form.isTrending,
+        isActive: form.isActive,
+        gstEnabled: form.gstEnabled,
       };
 
       if (editId) {
@@ -252,8 +257,11 @@ export default function AdminProductsPage() {
       setSelectedSizes([]);
       setTags([]);
       fetchProducts(page);
-    } catch { toast.error('Failed to save product'); }
-    finally { setSaving(false); }
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error || 'Failed to save product';
+      toast.error(msg);
+      console.error('Save product error:', err);
+    } finally { setSaving(false); }
   };
 
   const handleEdit = (p: Product) => {
@@ -433,15 +441,15 @@ export default function AdminProductsPage() {
                 {/* Subcategory (only for accessories) */}
                 {form.category === 'accessories' && (
                   <div>
-                    <label className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-1.5 block">Subcategory</label>
+                    <label className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-1.5 block">Subcategory *</label>
                     <select
                       value={form.subcategory}
                       onChange={(e) => setForm({ ...form, subcategory: e.target.value })}
-                      className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-rose-300 bg-white"
+                      className={`w-full px-3.5 py-2.5 border rounded-xl text-sm focus:outline-none focus:border-rose-300 bg-white ${!form.subcategory ? 'border-rose-300' : 'border-gray-200'}`}
                     >
-                      <option value="">Select subcategory...</option>
+                      <option value="">Select subcategory... *</option>
                       {ACCESSORIES_SUBCATEGORIES.map(sc => (
-                        <option key={sc} value={sc}>{SUBCATEGORY_LABELS[sc]}</option>
+                        <option key={sc} value={sc}>{sc}</option>
                       ))}
                     </select>
                   </div>

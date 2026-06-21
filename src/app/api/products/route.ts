@@ -17,6 +17,7 @@ export async function GET(req: NextRequest) {
     const isFeatured = searchParams.get('featured');
     const priceMin   = searchParams.get('priceMin');
     const priceMax   = searchParams.get('priceMax');
+    const showAll   = searchParams.get('showAll');
 
     // Map camelCase sort field to snake_case column name
     const sortColumnMap: Record<string, string> = {
@@ -32,8 +33,17 @@ export async function GET(req: NextRequest) {
 
     let query = supabase
       .from('products')
-      .select('*', { count: 'exact' })
-      .eq('is_active', true);
+      .select('*', { count: 'exact' });
+
+    // Admin requests with showAll skip the is_active filter
+    if (showAll === 'true') {
+      const user = getUserFromRequest(req);
+      if (!user || user.role !== 'admin') {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+      }
+    } else {
+      query = query.eq('is_active', true);
+    }
 
     if (category)         query = query.eq('category', category);
     if (subcategory)      query = query.eq('subcategory', subcategory);
@@ -90,20 +100,21 @@ export async function POST(req: NextRequest) {
 
     const body = await req.json();
 
+    if (!body.name || !body.price) {
+      return NextResponse.json({ error: 'Name and price are required' }, { status: 400 });
+    }
+
     // Map camelCase body fields to snake_case columns
     const insert: Record<string, unknown> = {
       name:            body.name,
-      description:     body.description,
-      category:        body.category,
-      subcategory:     body.subcategory,
-      price:           body.price,
-      discount_price:  body.discountPrice ?? body.discount_price,
-      stock:           body.stock ?? 0,
+      description:     body.description || '',
+      category:        body.category || 'accessories',
+      price:           Number(body.price),
+      stock:           Number(body.stock) || 0,
       sizes:           body.sizes ?? [],
       colors:          body.colors ?? [],
       images:          body.images ?? [],
       tags:            body.tags ?? [],
-      sku:             body.sku,
       brand:           body.brand ?? 'Ziya',
       is_featured:     body.isFeatured  ?? body.is_featured  ?? false,
       is_new_product:  body.isNewProduct ?? body.is_new_product ?? true,
@@ -111,6 +122,12 @@ export async function POST(req: NextRequest) {
       is_active:       body.isActive    ?? body.is_active    ?? true,
       gst_enabled:     body.gstEnabled  ?? body.gst_enabled  ?? true,
     };
+
+    // Only include optional fields if they have a value
+    const discountPrice = body.discountPrice ?? body.discount_price;
+    if (discountPrice != null && discountPrice !== '') insert.discount_price = Number(discountPrice);
+    if (body.subcategory) insert.subcategory = body.subcategory;
+    if (body.sku) insert.sku = body.sku;
 
     const { data: row, error } = await supabase
       .from('products')
@@ -120,7 +137,7 @@ export async function POST(req: NextRequest) {
 
     if (error || !row) {
       console.error('Create product error:', error);
-      return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+      return NextResponse.json({ error: error?.message || 'Failed to create product' }, { status: 500 });
     }
 
     return NextResponse.json({ product: mapRow(row) }, { status: 201 });

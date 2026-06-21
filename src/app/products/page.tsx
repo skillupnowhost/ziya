@@ -47,11 +47,11 @@ const CATEGORY_CONFIG: Record<string, { emoji: string; gradient: string; activeG
 };
 
 const ACCESSORIES_SUBCATEGORIES = [
-  { key: 'earring',                label: 'Earring',                emoji: '💎' },
-  { key: 'bracelet',               label: 'Bracelet',               emoji: '📿' },
-  { key: 'chain',                  label: 'Chain',                  emoji: '⛓️' },
-  { key: 'hair-accessories',       label: 'Hair Accessories',       emoji: '🎀' },
-  { key: 'anti-tarnish-jewellery', label: 'Anti Tarnish Jewellery', emoji: '💍' },
+  { key: 'Earring',                label: 'Earring',                emoji: '💎' },
+  { key: 'Bracelet',               label: 'Bracelet',               emoji: '📿' },
+  { key: 'Chain',                  label: 'Chain',                  emoji: '⛓️' },
+  { key: 'Hair Accessories',       label: 'Hair Accessories',       emoji: '🎀' },
+  { key: 'Anti Tarnish Jewellery', label: 'Anti Tarnish Jewellery', emoji: '💍' },
 ];
 
 const SORT_OPTIONS = [
