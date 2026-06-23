@@ -8,11 +8,16 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     if (!payload) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const { id } = await params;
-    const { data: row } = await supabase
+    const { data: row, error: fetchErr } = await supabase
       .from('orders')
       .select('*')
       .eq('id', id)
       .maybeSingle();
+
+    if (fetchErr) {
+      console.error('GET /api/orders/[id] error:', fetchErr);
+      return NextResponse.json({ error: fetchErr.message }, { status: 500 });
+    }
 
     if (!row) return NextResponse.json({ error: 'Order not found' }, { status: 404 });
 
@@ -36,7 +41,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     }
 
     return NextResponse.json({ order });
-  } catch {
+  } catch (err) {
+    console.error('GET /api/orders/[id] unhandled error:', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -60,33 +66,47 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 
     // Deduct stock when admin confirms payment for manual orders
     if (body.paymentStatus === 'paid') {
-      const { data: existing } = await supabase
+      const { data: existing, error: fetchErr } = await supabase
         .from('orders')
         .select('payment_status, payment_method, items')
         .eq('id', id)
         .maybeSingle();
 
+      if (fetchErr) {
+        console.error('PUT /api/orders/[id] fetch existing order error:', fetchErr);
+        return NextResponse.json({ error: fetchErr.message }, { status: 500 });
+      }
+
       if (existing && existing.payment_status !== 'paid' && existing.payment_method === 'manual') {
         const items = existing.items as { productId: string; quantity: number }[];
         for (const item of items) {
-          await supabase.rpc('decrement_product_stock', {
+          const { error: rpcErr } = await supabase.rpc('decrement_product_stock', {
             p_id: item.productId,
             amount: item.quantity,
           });
+          if (rpcErr) {
+            console.error('PUT /api/orders/[id] stock decrement error:', rpcErr);
+          }
         }
       }
     }
 
-    const { data: row } = await supabase
+    const { data: row, error: updateErr } = await supabase
       .from('orders')
       .update(update)
       .eq('id', id)
       .select()
       .maybeSingle();
 
+    if (updateErr) {
+      console.error('PUT /api/orders/[id] update error:', updateErr);
+      return NextResponse.json({ error: updateErr.message }, { status: 500 });
+    }
+
     if (!row) return NextResponse.json({ error: 'Order not found' }, { status: 404 });
     return NextResponse.json({ order: mapRow(row) });
-  } catch {
+  } catch (err) {
+    console.error('PUT /api/orders/[id] unhandled error:', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -129,15 +149,22 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       }
     }
 
-    const { data: row } = await supabase
+    const { data: row, error: patchErr } = await supabase
       .from('orders')
       .update({ shipping_address: merged })
       .eq('id', id)
       .select()
       .maybeSingle();
 
-    return NextResponse.json({ order: mapRow(row!) });
-  } catch {
+    if (patchErr) {
+      console.error('PATCH /api/orders/[id] error:', patchErr);
+      return NextResponse.json({ error: patchErr.message }, { status: 500 });
+    }
+
+    if (!row) return NextResponse.json({ error: 'Order not found' }, { status: 404 });
+    return NextResponse.json({ order: mapRow(row) });
+  } catch (err) {
+    console.error('PATCH /api/orders/[id] unhandled error:', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -150,16 +177,22 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
     }
 
     const { id } = await params;
-    const { data: row } = await supabase
+    const { data: row, error: delErr } = await supabase
       .from('orders')
       .delete()
       .eq('id', id)
       .select()
       .maybeSingle();
 
+    if (delErr) {
+      console.error('DELETE /api/orders/[id] error:', delErr);
+      return NextResponse.json({ error: delErr.message }, { status: 500 });
+    }
+
     if (!row) return NextResponse.json({ error: 'Order not found' }, { status: 404 });
     return NextResponse.json({ success: true });
-  } catch {
+  } catch (err) {
+    console.error('DELETE /api/orders/[id] unhandled error:', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

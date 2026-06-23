@@ -912,8 +912,9 @@ export default function AdminOrdersPage() {
         )
       );
       toast.success('Status updated');
-    } catch {
-      toast.error('Update failed');
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error || 'Update failed';
+      toast.error(msg);
     } finally {
       setStatusModal(null);
     }
@@ -928,8 +929,9 @@ export default function AdminOrdersPage() {
         prev.map((o) => o._id === id ? { ...o, paymentStatus: 'paid', status: 'confirmed' } : o)
       );
       toast.success('Order marked as paid!');
-    } catch {
-      toast.error('Failed to update payment status');
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error || 'Failed to update payment status';
+      toast.error(msg);
     } finally {
       setMarkPaidModal(null);
     }
@@ -942,8 +944,9 @@ export default function AdminOrdersPage() {
       await axios.delete(`/api/orders/${id}`);
       setOrders((prev) => prev.filter((o) => o._id !== id));
       toast.success('Order deleted');
-    } catch {
-      toast.error('Delete failed');
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error || 'Delete failed';
+      toast.error(msg);
     } finally {
       setDeleteModal(null);
     }
