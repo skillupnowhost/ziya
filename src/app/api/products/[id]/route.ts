@@ -54,6 +54,16 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       .maybeSingle();
 
     if (error || !row) return NextResponse.json({ error: 'Product not found' }, { status: 404 });
+
+    // Restocked — clear any pending "out of stock" alerts for this product
+    if ('stock' in update && (row.stock as number) > 0) {
+      await supabase
+        .from('admin_notifications')
+        .delete()
+        .eq('type', 'out_of_stock')
+        .eq('product_id', id);
+    }
+
     return NextResponse.json({ product: mapRow(row) });
   } catch (error) {
     console.error('Update product error:', error);

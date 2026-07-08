@@ -53,63 +53,18 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // Newsletter coupon (ZIYA10-XXXXXXXX format)
+    // Newsletter coupon (ZIYA10-XXXXXXXX format) — discontinued, no longer redeemable
     if (code.startsWith('ZIYA10-')) {
       const payload = getUserFromRequest(req);
-
-      const { data: coupon } = await supabase
-        .from('newsletter_coupons')
-        .select('*')
-        .eq('coupon_code', code)
-        .maybeSingle();
-
-      if (!coupon) {
-        if (payload) {
-          await supabase.from('coupon_logs').insert({
-            email:       'unknown',
-            coupon_code: code,
-            action:      'rejected_not_found',
-            reason:      'Coupon code does not exist',
-            ip_address:  ipAddress,
-            user_id:     payload.id,
-          });
-        }
-        return NextResponse.json({ valid: false, error: 'Invalid coupon code' });
-      }
-
-      if (coupon.is_used) {
-        await supabase.from('coupon_logs').insert({
-          email:       coupon.email,
-          coupon_code: code,
-          action:      'rejected_already_used',
-          reason:      'Coupon already redeemed',
-          ip_address:  ipAddress,
-          user_id:     payload?.id ?? null,
-        });
-        return NextResponse.json({ valid: false, error: 'This coupon has already been used' });
-      }
-
-      if (payload) {
-        const { count: priorOrders } = await supabase
-          .from('orders')
-          .select('id', { count: 'exact', head: true })
-          .eq('user_id', payload.id as string)
-          .in('status', ['confirmed', 'processing', 'shipped', 'delivered']);
-
-        if ((priorOrders ?? 0) > 0) {
-          await supabase.from('coupon_logs').insert({
-            email:       coupon.email,
-            coupon_code: code,
-            action:      'rejected_not_first_order',
-            reason:      'User already has prior orders',
-            ip_address:  ipAddress,
-            user_id:     payload.id,
-          });
-          return NextResponse.json({ valid: false, error: 'This coupon is valid on your first order only' });
-        }
-      }
-
-      return NextResponse.json({ valid: true, type: 'percent', value: 10, code });
+      await supabase.from('coupon_logs').insert({
+        email:       'unknown',
+        coupon_code: code,
+        action:      'rejected_discontinued',
+        reason:      'Newsletter discount has been discontinued',
+        ip_address:  ipAddress,
+        user_id:     payload?.id ?? null,
+      });
+      return NextResponse.json({ valid: false, error: 'This discount is currently unavailable' });
     }
 
     return NextResponse.json({ valid: false, error: 'Invalid coupon code' });

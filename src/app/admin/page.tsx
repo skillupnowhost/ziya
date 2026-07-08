@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react';
 import axios from 'axios';
 import Link from 'next/link';
-import { CurrencyRupeeIcon, ShoppingBagIcon, UsersIcon, CubeIcon, ExclamationTriangleIcon } from '@heroicons/react/24/outline';
+import { CurrencyRupeeIcon, ShoppingBagIcon, UsersIcon, CubeIcon, ExclamationTriangleIcon, PencilSquareIcon } from '@heroicons/react/24/outline';
 
 interface Stats {
   totalOrders: number;
@@ -32,6 +32,7 @@ interface Notification {
   title: string;
   message: string;
   is_read: boolean;
+  product_id: string | null;
   created_at: string;
 }
 
@@ -50,6 +51,9 @@ export default function AdminDashboard() {
   const [outOfStockProducts, setOutOfStockProducts] = useState<OutOfStockProduct[]>([]);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editValue, setEditValue] = useState('');
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     Promise.all([
@@ -69,6 +73,39 @@ export default function AdminDashboard() {
       await axios.put('/api/admin/notifications', { notificationId: 'all' });
       setNotifications([]);
     } catch { /* silent */ }
+  };
+
+  const startEditStock = (p: OutOfStockProduct) => {
+    setEditingId(p.id);
+    setEditValue(String(p.stock > 0 ? p.stock : ''));
+  };
+
+  const cancelEditStock = () => {
+    setEditingId(null);
+    setEditValue('');
+  };
+
+  const saveStock = async (productId: string) => {
+    const newStock = Number(editValue);
+    if (!Number.isFinite(newStock) || newStock < 0) return;
+
+    setSaving(true);
+    try {
+      await axios.put(`/api/products/${productId}`, { stock: newStock });
+
+      if (newStock > 0) {
+        // Restocked — drop from the alert list and clear its notifications
+        setOutOfStockProducts((prev) => prev.filter((p) => p.id !== productId));
+        setNotifications((prev) => prev.filter((n) => n.product_id !== productId));
+      } else {
+        setOutOfStockProducts((prev) => prev.map((p) => (p.id === productId ? { ...p, stock: newStock } : p)));
+      }
+      cancelEditStock();
+    } catch {
+      /* silent */
+    } finally {
+      setSaving(false);
+    }
   };
 
   const statCards = [
@@ -128,11 +165,52 @@ export default function AdminDashboard() {
             {outOfStockProducts.slice(0, 6).map((p) => (
               <div key={p.id} className="flex items-center gap-3 bg-white rounded-xl p-3 border border-red-100">
                 {p.image && (
-                  <img src={p.image} alt={p.name} className="w-10 h-12 object-cover rounded-lg" />
+                  <img src={p.image} alt={p.name} className="w-10 h-12 object-cover rounded-lg shrink-0" />
                 )}
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-gray-800 truncate">{p.name}</p>
-                  <p className="text-xs font-semibold text-red-500">Stock: {p.stock}</p>
+                  {editingId === p.id ? (
+                    <div className="flex items-center gap-1.5 mt-1">
+                      <input
+                        type="number"
+                        min={0}
+                        autoFocus
+                        value={editValue}
+                        onChange={(e) => setEditValue(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') saveStock(p.id);
+                          if (e.key === 'Escape') cancelEditStock();
+                        }}
+                        className="w-16 text-xs px-1.5 py-0.5 border border-gray-200 rounded-md focus:outline-none focus:ring-1 focus:ring-rose-300"
+                        placeholder="Qty"
+                      />
+                      <button
+                        onClick={() => saveStock(p.id)}
+                        disabled={saving}
+                        className="text-xs font-semibold text-emerald-600 hover:text-emerald-700 disabled:opacity-50"
+                      >
+                        Save
+                      </button>
+                      <button
+                        onClick={cancelEditStock}
+                        disabled={saving}
+                        className="text-xs text-gray-400 hover:text-gray-500"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2 mt-0.5">
+                      <p className="text-xs font-semibold text-red-500">Stock: {p.stock}</p>
+                      <button
+                        onClick={() => startEditStock(p)}
+                        className="flex items-center gap-0.5 text-xs text-gray-400 hover:text-rose-500"
+                        title="Update stock"
+                      >
+                        <PencilSquareIcon className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
             ))}

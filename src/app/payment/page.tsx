@@ -17,6 +17,7 @@ import {
   ArrowLeftIcon,
   ExclamationTriangleIcon,
   ShoppingBagIcon,
+  InformationCircleIcon,
 } from '@heroicons/react/24/outline';
 import {
   CheckCircleIcon,
@@ -360,6 +361,14 @@ function PaymentContent() {
               transition={{ delay: 0.15 }}
             >
               <h2 className="text-sm font-semibold text-gray-900 mb-4">Price Details</h2>
+              {order.promoCode && order.discount === 0 && (
+                <div className="flex items-start gap-2 mb-4 p-3 bg-amber-50 border border-amber-100 rounded-xl">
+                  <InformationCircleIcon className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
+                  <p className="text-xs text-amber-700 leading-snug">
+                    The discount code <span className="font-mono font-semibold">{order.promoCode}</span> is currently unavailable and has been removed from this order. The total below reflects standard pricing.
+                  </p>
+                </div>
+              )}
               <div className="space-y-3">
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-500">

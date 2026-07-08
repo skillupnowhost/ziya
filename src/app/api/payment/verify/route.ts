@@ -73,7 +73,7 @@ export async function POST(req: NextRequest) {
 
     // Deduct stock for each item and check for out-of-stock
     const items = orderRow.items as { productId: string; quantity: number; name?: string }[];
-    const outOfStockProducts: string[] = [];
+    const outOfStockProducts: { id: string; name: string }[] = [];
 
     for (const item of items) {
       await supabase.rpc('decrement_product_stock', {
@@ -88,17 +88,18 @@ export async function POST(req: NextRequest) {
         .maybeSingle();
 
       if (product && (product.stock as number) <= 0) {
-        outOfStockProducts.push(product.name as string);
+        outOfStockProducts.push({ id: product.id as string, name: product.name as string });
       }
     }
 
     // Notify admin about out-of-stock products
     if (outOfStockProducts.length > 0) {
       await supabase.from('admin_notifications').insert(
-        outOfStockProducts.map((name) => ({
+        outOfStockProducts.map(({ id: productId, name }) => ({
           type: 'out_of_stock',
           title: 'Product Out of Stock',
           message: `"${name}" is now out of stock after order #${orderId.slice(-8).toUpperCase()}`,
+          product_id: productId,
           is_read: false,
         }))
       );

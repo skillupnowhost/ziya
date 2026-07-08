@@ -105,7 +105,6 @@ export async function POST(req: NextRequest) {
     const shippingCost = subtotal >= 999 ? 0 : (isTamilNadu ? 79 : 99);
     let discount = 0;
 
-    let newsletterCoupon: Record<string, unknown> | null = null;
     let appliedPromoCode: Record<string, unknown> | null = null;
 
     if (promoCode) {
@@ -140,28 +139,8 @@ export async function POST(req: NextRequest) {
         }
         appliedPromoCode = promo;
       } else if (code.startsWith('ZIYA10-')) {
-        const { data: nc } = await supabase
-          .from('newsletter_coupons')
-          .select('*')
-          .eq('coupon_code', code)
-          .maybeSingle();
-
-        if (!nc || nc.is_used) {
-          return NextResponse.json({ error: 'This coupon is invalid or has already been used' }, { status: 400 });
-        }
-
-        // First-order check
-        const { count: priorOrders } = await supabase
-          .from('orders')
-          .select('id', { count: 'exact', head: true })
-          .eq('user_id', payload.id as string)
-          .in('status', ['confirmed', 'processing', 'shipped', 'delivered']);
-
-        if ((priorOrders ?? 0) > 0) {
-          return NextResponse.json({ error: 'This coupon is valid on your first order only' }, { status: 400 });
-        }
-        discount = Math.round(subtotal * 0.1);
-        newsletterCoupon = nc;
+        // Newsletter discount has been discontinued — no longer redeemable
+        return NextResponse.json({ error: 'This discount is currently unavailable' }, { status: 400 });
       } else {
         return NextResponse.json({ error: 'Invalid coupon code' }, { status: 400 });
       }
@@ -232,7 +211,7 @@ export async function POST(req: NextRequest) {
 
     // Deduct stock immediately for COD only
     if (paymentMethod === 'cod') {
-      const outOfStockProducts: string[] = [];
+      const outOfStockProducts: { id: string; name: string }[] = [];
       for (const item of items) {
         await supabase.rpc('decrement_product_stock', {
           p_id: item.productId,
@@ -246,16 +225,17 @@ export async function POST(req: NextRequest) {
           .maybeSingle();
 
         if (updatedProduct && (updatedProduct.stock as number) <= 0) {
-          outOfStockProducts.push(updatedProduct.name as string);
+          outOfStockProducts.push({ id: updatedProduct.id as string, name: updatedProduct.name as string });
         }
       }
 
       if (outOfStockProducts.length > 0) {
         await supabase.from('admin_notifications').insert(
-          outOfStockProducts.map((name) => ({
+          outOfStockProducts.map(({ id: productId, name }) => ({
             type: 'out_of_stock',
             title: 'Product Out of Stock',
             message: `"${name}" is now out of stock after COD order #${String(order.id).slice(-8).toUpperCase()}`,
+            product_id: productId,
             is_read: false,
           }))
         );
@@ -265,28 +245,6 @@ export async function POST(req: NextRequest) {
     // Increment promo code usage
     if (appliedPromoCode) {
       await supabase.rpc('increment_promo_used_count', { p_id: appliedPromoCode.id });
-    }
-
-    // Mark newsletter coupon as used
-    if (newsletterCoupon) {
-      await supabase
-        .from('newsletter_coupons')
-        .update({
-          is_used:           true,
-          used_at:           new Date().toISOString(),
-          used_by_user_id:   payload.id,
-          used_in_order_id:  order.id,
-        })
-        .eq('id', newsletterCoupon.id);
-
-      await supabase.from('coupon_logs').insert({
-        email:       newsletterCoupon.email,
-        coupon_code: newsletterCoupon.couponCode,
-        action:      'used',
-        reason:      `Redeemed on order ${order.id}`,
-        user_id:     payload.id,
-        order_id:    order.id,
-      });
     }
 
     return NextResponse.json({ order }, { status: 201 });

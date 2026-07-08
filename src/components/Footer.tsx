@@ -1,19 +1,14 @@
 'use client';
-import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { FaInstagram, FaFacebook } from 'react-icons/fa';
 import {
   EnvelopeIcon,
-  ClipboardDocumentIcon,
-  CheckIcon,
-  XMarkIcon,
   PhoneIcon,
   ClockIcon,
 } from '@heroicons/react/24/outline';
-import toast from 'react-hot-toast';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 
 const categories = [
   { label: 'Dresses', href: '/products?category=dresses' },
@@ -56,244 +51,12 @@ const contactItems = [
 
 export default function Footer() {
   const pathname = usePathname();
-  const [email, setEmail] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [couponCode, setCouponCode] = useState('');
-  const [copied, setCopied] = useState(false);
-  const [showModal, setShowModal] = useState(false);
-  const [alreadyClaimed, setAlreadyClaimed] = useState(false);
-  const [subscribed, setSubscribed] = useState(true); // default true to avoid flash
-
-  useEffect(() => {
-    setSubscribed(localStorage.getItem('ziya_newsletter_subscribed') === 'true');
-  }, []);
-
-  const isHomePage = pathname === '/';
-  const showNewsletter = isHomePage && !subscribed;
 
   if (pathname.startsWith('/admin')) return null;
 
-  const handleSubscribe = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!email || loading) return;
-    setLoading(true);
-    try {
-      const res = await fetch('/api/newsletter/subscribe', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email }),
-      });
-      const data = await res.json();
-      if (!res.ok) { toast.error(data.error || 'Something went wrong.'); return; }
-      setCouponCode(data.couponCode);
-      setAlreadyClaimed(!!data.alreadyClaimed);
-      setShowModal(true);
-      setEmail('');
-      localStorage.setItem('ziya_newsletter_subscribed', 'true');
-      setSubscribed(true);
-    } catch {
-      toast.error('Could not connect. Please try again.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleCopy = async () => {
-    try {
-      await navigator.clipboard.writeText(couponCode);
-      setCopied(true);
-      toast.success('Coupon code copied!');
-      setTimeout(() => setCopied(false), 2000);
-    } catch {
-      toast.error('Could not copy. Please copy manually.');
-    }
-  };
-
   return (
     <>
-      {/* Coupon reveal modal */}
-      <AnimatePresence>
-        {showModal && (
-          <motion.div
-            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-          >
-            <motion.div
-              className="relative bg-[#12121f] border border-rose-500/30 rounded-3xl p-8 max-w-sm w-full text-center shadow-2xl"
-              initial={{ scale: 0.85, opacity: 0, y: 24 }}
-              animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.9, opacity: 0, y: 16 }}
-              transition={{ type: 'spring', stiffness: 350, damping: 28 }}
-            >
-              <motion.button
-                type="button"
-                onClick={() => setShowModal(false)}
-                aria-label="Close"
-                className="absolute top-4 right-4 text-gray-500 hover:text-white transition-colors"
-                whileHover={{ scale: 1.15, rotate: 90 }}
-                whileTap={{ scale: 0.9 }}
-                transition={{ duration: 0.2 }}
-              >
-                <XMarkIcon className="w-5 h-5" />
-              </motion.button>
-
-              <motion.div
-                className="text-5xl mb-4"
-                initial={{ scale: 0.3, rotate: -20 }}
-                animate={{ scale: 1, rotate: 0 }}
-                transition={{ delay: 0.1, type: 'spring', stiffness: 350, damping: 18 }}
-              >
-                {alreadyClaimed ? '👋' : '🎉'}
-              </motion.div>
-              <h3 className="text-white font-bold text-xl mb-1">
-                {alreadyClaimed ? 'Welcome back!' : "Here's your 10% off!"}
-              </h3>
-              <p className="text-gray-400 text-sm mb-6">
-                {alreadyClaimed
-                  ? 'You already subscribed. Here is your coupon:'
-                  : 'Use this code at checkout on your first order:'}
-              </p>
-
-              <motion.div
-                className="flex items-center gap-2 bg-white/5 border border-rose-400/40 rounded-2xl px-4 py-3 mb-4"
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.25 }}
-              >
-                <span className="flex-1 text-rose-400 font-mono font-bold text-lg tracking-widest text-left">
-                  {couponCode}
-                </span>
-                <motion.button
-                  type="button"
-                  onClick={handleCopy}
-                  aria-label="Copy coupon code"
-                  className="text-gray-400 hover:text-rose-400 transition-colors p-1"
-                  whileHover={{ scale: 1.2 }}
-                  whileTap={{ scale: 0.85 }}
-                >
-                  <AnimatePresence mode="wait">
-                    {copied ? (
-                      <motion.span key="check" initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ scale: 0 }}>
-                        <CheckIcon className="w-5 h-5 text-emerald-400" />
-                      </motion.span>
-                    ) : (
-                      <motion.span key="copy" initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ scale: 0 }}>
-                        <ClipboardDocumentIcon className="w-5 h-5" />
-                      </motion.span>
-                    )}
-                  </AnimatePresence>
-                </motion.button>
-              </motion.div>
-
-              <p className="text-xs text-gray-500 mb-6">
-                Valid on your <span className="text-rose-400 font-semibold">first order only</span>. One use per email.
-              </p>
-
-              <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}>
-                <Link
-                  href="/products"
-                  onClick={() => setShowModal(false)}
-                  className="block w-full py-3 bg-rose-400 hover:bg-rose-500 text-white font-bold rounded-2xl transition-colors text-sm"
-                >
-                  Shop Now →
-                </Link>
-              </motion.div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
       <footer className="bg-[#1a1a2e] text-gray-300">
-        {/* Newsletter — homepage only, hidden after subscribe */}
-        <AnimatePresence>
-          {showNewsletter && (
-            <motion.div
-              className="newsletter-bg relative overflow-hidden py-8 sm:py-10"
-              initial={{ opacity: 1 }}
-              exit={{ opacity: 0, height: 0, paddingTop: 0, paddingBottom: 0 }}
-              transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
-            >
-              <span className="newsletter-watermark absolute right-[-2%] top-1/2 -translate-y-1/2 text-[60px] sm:text-[90px] lg:text-[110px] font-black leading-none select-none pointer-events-none">
-                10%
-              </span>
-              <div className="absolute top-0 left-1/4 w-64 h-64 bg-rose-600/10 rounded-full blur-[80px] pointer-events-none" />
-              <div className="absolute bottom-0 right-1/4 w-56 h-56 bg-pink-500/10 rounded-full blur-[60px] pointer-events-none" />
-              <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-rose-500/40 to-transparent" />
-
-              <div className="relative max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 xl:px-12">
-                <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6 lg:gap-12">
-                  <motion.div
-                    className="w-full lg:max-w-xs"
-                    initial={{ opacity: 0, x: -24 }}
-                    whileInView={{ opacity: 1, x: 0 }}
-                    viewport={{ once: true, margin: '-60px' }}
-                    transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
-                  >
-                    <div className="flex items-center gap-2 mb-3">
-                      <div className="h-px w-6 bg-rose-500/50" />
-                      <span className="text-rose-400 text-[10px] font-bold tracking-[0.3em] uppercase">Ziya Updates</span>
-                    </div>
-                    <h3 className="font-serif text-xl sm:text-2xl lg:text-3xl font-bold text-white leading-tight mb-2">
-                      New arrivals.<br />
-                      <span className="italic text-rose-400">Your inbox first.</span>
-                    </h3>
-                    <p className="text-gray-500 text-xs leading-relaxed max-w-xs">
-                      Get notified the moment new Korean collections land — dresses, accessories, stationery &amp; more.
-                      Plus a <span className="text-rose-400 font-semibold">10% discount</span> on your very first order.
-                    </p>
-                  </motion.div>
-
-                  <motion.div
-                    className="w-full lg:flex-1 lg:max-w-sm"
-                    initial={{ opacity: 0, x: 24 }}
-                    whileInView={{ opacity: 1, x: 0 }}
-                    viewport={{ once: true, margin: '-60px' }}
-                    transition={{ duration: 0.55, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
-                  >
-                    <div className="newsletter-card-border relative rounded-2xl p-[1px]">
-                      <div className="rounded-2xl bg-[#12121f] px-4 sm:px-5 py-4 sm:py-5">
-                        <p className="text-white text-sm font-semibold mb-0.5 tracking-wide">Subscribe to Ziya</p>
-                        <p className="text-gray-500 text-xs mb-4">Weekly drops, offers &amp; Korean fashion updates</p>
-                        <form onSubmit={handleSubscribe} className="space-y-3">
-                          <div className="relative group">
-                            <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-rose-500/20 to-pink-500/20 opacity-0 group-focus-within:opacity-100 blur transition-all duration-300" />
-                            <div className="relative flex items-center bg-white/5 border border-white/8 group-focus-within:border-rose-400/60 rounded-xl transition-all duration-300">
-                              <span className="pl-3 shrink-0">
-                                <EnvelopeIcon className="w-4 h-4 text-rose-400/70" />
-                              </span>
-                              <input
-                                type="email"
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                                placeholder="your@email.com"
-                                required
-                                disabled={loading}
-                                className="w-full px-3 py-2.5 bg-transparent text-white text-sm placeholder-gray-600 focus:outline-none disabled:opacity-60"
-                              />
-                            </div>
-                          </div>
-                          <motion.button
-                            type="submit"
-                            disabled={loading}
-                            className="newsletter-submit-btn w-full py-2.5 rounded-xl font-bold text-sm text-white tracking-wide disabled:opacity-60 disabled:cursor-not-allowed"
-                            whileHover={{ scale: loading ? 1 : 1.02 }}
-                            whileTap={{ scale: loading ? 1 : 0.97 }}
-                          >
-                            {loading ? 'Getting your coupon...' : 'Get My 10% Off →'}
-                          </motion.button>
-                        </form>
-                      </div>
-                    </div>
-                  </motion.div>
-                </div>
-              </div>
-              <div className="absolute bottom-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-white/5 to-transparent" />
-            </motion.div>
-          )}
-        </AnimatePresence>
-
         {/* Main footer */}
         <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 py-12">
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
