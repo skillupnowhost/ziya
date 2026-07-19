@@ -2,8 +2,8 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence, type Transition, type Variants, type TargetAndTransition } from 'framer-motion';
 import Link from 'next/link';
-import axios from 'axios';
 import { useAuth } from '@/context/AuthContext';
+import { fetchAllOrders } from '@/lib/fetchOrders';
 import {
   ClockIcon, CheckBadgeIcon, CubeIcon,
   TruckIcon, HomeIcon, ChevronDownIcon,
@@ -364,8 +364,8 @@ export default function TrackOrderPage() {
   useEffect(() => {
     if (!user) return;
     setLoading(true);
-    axios.get('/api/orders')
-      .then(r => setOrders(r.data.orders || []))
+    fetchAllOrders<Order>()
+      .then(setOrders)
       .catch(console.error)
       .finally(() => setLoading(false));
   }, [user]);

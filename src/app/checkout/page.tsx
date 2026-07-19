@@ -78,7 +78,7 @@ function CheckoutContent() {
     pincode: '',
     country: 'India',
   });
-  const [savedAddresses, setSavedAddresses] = useState<{ doorNumber: string; streetName: string; landmark: string; city: string; state: string; pincode: string; country: string }[]>([]);
+  const [savedAddresses, setSavedAddresses] = useState<{ doorNumber: string; streetName: string; landmark: string; city: string; state: string; pincode: string; country: string; phone?: string }[]>([]);
   const [showSavedAddresses, setShowSavedAddresses] = useState(false);
   const [stateDropdownOpen, setStateDropdownOpen] = useState(false);
   const [stateSearch, setStateSearch] = useState('');
@@ -122,7 +122,25 @@ function CheckoutContent() {
         .then((r) => {
           const addrs = r.data.user.addresses || [];
           setSavedAddresses(addrs);
-          if (addrs.length > 0) setShowSavedAddresses(true);
+          if (addrs.length === 0) return;
+
+          // Auto-fill with the customer's default (most recently used)
+          // address + phone combo so they don't have to re-enter it.
+          const defaultIdx = r.data.user.defaultAddress;
+          const toUse = (typeof defaultIdx === 'number' && addrs[defaultIdx]) ? addrs[defaultIdx] : addrs[addrs.length - 1];
+          setAddress((prev) => ({
+            ...prev,
+            doorNumber: toUse.doorNumber || '',
+            streetName: toUse.streetName || '',
+            landmark: toUse.landmark || '',
+            city: toUse.city || '',
+            state: matchIndianState(toUse.state || ''),
+            pincode: toUse.pincode || '',
+            country: toUse.country || 'India',
+            phone: toUse.phone || prev.phone,
+          }));
+
+          if (addrs.length > 1) setShowSavedAddresses(true);
         })
         .catch(() => {});
     }
@@ -299,9 +317,11 @@ function CheckoutContent() {
                                 state: matchIndianState(addr.state || ''),
                                 pincode: addr.pincode || '',
                                 country: addr.country || 'India',
+                                phone: addr.phone || prev.phone,
                               }));
                               setShowSavedAddresses(false);
                               toast.success('Address filled');
+                              axios.put('/api/auth/me', { defaultAddress: i }).catch(() => {});
                             }}
                             className="text-left p-3 rounded-xl border-2 border-gray-100 hover:border-rose-300 hover:bg-rose-50/50 transition-all"
                             initial={{ opacity: 0, y: 6 }}
@@ -316,6 +336,9 @@ function CheckoutContent() {
                             <p className="text-[11px] text-gray-400 mt-0.5 line-clamp-1">
                               {[addr.city, addr.state, addr.pincode].filter(Boolean).join(', ')}
                             </p>
+                            {addr.phone && (
+                              <p className="text-[11px] text-rose-400 mt-0.5 font-medium">{addr.phone}</p>
+                            )}
                           </motion.button>
                         ))}
                       </div>

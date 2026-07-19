@@ -1,10 +1,10 @@
 'use client';
 import { useEffect, useState } from 'react';
-import axios from 'axios';
 import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
+import { fetchAllOrders } from '@/lib/fetchOrders';
 import {
   ChevronLeftIcon,
   ChevronRightIcon,
@@ -174,8 +174,8 @@ export default function OrdersPage() {
   useEffect(() => {
     if (authLoading) return;
     if (!user) { router.push('/auth/login'); return; }
-    axios.get('/api/orders')
-      .then((r) => setOrders(r.data.orders || []))
+    fetchAllOrders<Order>()
+      .then(setOrders)
       .catch(console.error)
       .finally(() => setLoading(false));
   }, [user, authLoading, router]);

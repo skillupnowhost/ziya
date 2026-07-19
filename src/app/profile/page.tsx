@@ -10,6 +10,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   UserCircleIcon,
   PlusIcon,
+  PencilIcon,
   TrashIcon,
   HeartIcon,
   MapPinIcon,
@@ -24,6 +25,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { HeartIcon as HeartSolid, CheckBadgeIcon, SparklesIcon } from '@heroicons/react/24/solid';
 import ConfirmDialog from '@/components/ConfirmDialog';
+import { isSameAddressAndPhone } from '@/lib/addressDedupe';
 
 interface Address {
   doorNumber: string;
@@ -33,6 +35,7 @@ interface Address {
   state: string;
   pincode: string;
   country: string;
+  phone: string;
 }
 
 type Tab = 'profile' | 'addresses' | 'favourites';
@@ -54,11 +57,13 @@ function ProfileContent() {
   }, [searchParams]);
   const [form, setForm] = useState({ name: '', phone: '' });
   const [addresses, setAddresses] = useState<Address[]>([]);
-  const [newAddress, setNewAddress] = useState<Address>({
-    doorNumber: '', streetName: '', landmark: '', city: '', state: '', pincode: '', country: 'India',
-  });
+  const emptyAddress: Address = {
+    doorNumber: '', streetName: '', landmark: '', city: '', state: '', pincode: '', country: 'India', phone: '',
+  };
+  const [newAddress, setNewAddress] = useState<Address>(emptyAddress);
   const [activeSuggestionField, setActiveSuggestionField] = useState<keyof Address | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
+  const [editingIdx, setEditingIdx] = useState<number | null>(null);
   const [removeAddrIdx, setRemoveAddrIdx] = useState<number | null>(null);
 
   useEffect(() => {
@@ -84,20 +89,43 @@ function ProfileContent() {
     }
   };
 
-  const addAddress = async () => {
-    if (!newAddress.doorNumber || !newAddress.streetName || !newAddress.city || !newAddress.state || !newAddress.pincode) {
+  const startEdit = (idx: number) => {
+    setNewAddress({ ...emptyAddress, ...addresses[idx] });
+    setEditingIdx(idx);
+    setShowAddForm(true);
+  };
+
+  const cancelAddressForm = () => {
+    setShowAddForm(false);
+    setEditingIdx(null);
+    setNewAddress(emptyAddress);
+  };
+
+  const saveAddress = async () => {
+    if (!newAddress.doorNumber || !newAddress.streetName || !newAddress.city || !newAddress.state || !newAddress.pincode || !newAddress.phone) {
       toast.error('Please fill all required address fields');
       return;
     }
-    const updated = [...addresses, newAddress];
+
+    // Same address + same phone as another saved entry isn't allowed —
+    // a different phone at the same address (or vice versa) is fine.
+    const isDuplicate = addresses.some((a, i) => i !== editingIdx && isSameAddressAndPhone(a, newAddress));
+    if (isDuplicate) {
+      toast.error('This address and phone number combination is already saved');
+      return;
+    }
+
+    const updated = editingIdx !== null
+      ? addresses.map((a, i) => (i === editingIdx ? newAddress : a))
+      : [...addresses, newAddress];
+
     try {
       await axios.put('/api/auth/me', { addresses: updated });
       setAddresses(updated);
-      setNewAddress({ doorNumber: '', streetName: '', landmark: '', city: '', state: '', pincode: '', country: 'India' });
-      setShowAddForm(false);
-      toast.success('Address added!');
+      cancelAddressForm();
+      toast.success(editingIdx !== null ? 'Address updated!' : 'Address added!');
     } catch {
-      toast.error('Failed to add address');
+      toast.error(editingIdx !== null ? 'Failed to update address' : 'Failed to add address');
     }
   };
 
@@ -106,6 +134,7 @@ function ProfileContent() {
     try {
       await axios.put('/api/auth/me', { addresses: updated });
       setAddresses(updated);
+      if (idx === editingIdx) cancelAddressForm();
       toast.success('Address removed');
     } catch {
       toast.error('Failed to remove address');
@@ -569,20 +598,36 @@ function ProfileContent() {
                       <p className="font-black text-gray-900 text-sm truncate">{addr.doorNumber}{addr.streetName ? `, ${addr.streetName}` : ''}</p>
                       {addr.landmark && <p className="text-xs text-gray-400 mt-0.5 truncate">Near {addr.landmark}</p>}
                       <p className="text-sm text-gray-500 mt-0.5">{addr.city}, {addr.state} — {addr.pincode}</p>
+                      {addr.phone && (
+                        <p className="flex items-center gap-1 text-xs text-rose-500 font-semibold mt-1">
+                          <PhoneIcon className="w-3 h-3" /> {addr.phone}
+                        </p>
+                      )}
                       <span className="inline-block mt-1.5 text-[10px] font-bold bg-gray-100 text-gray-500 px-2.5 py-0.5 rounded-full uppercase tracking-wider">
                         {addr.country}
                       </span>
                     </div>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => setRemoveAddrIdx(i)}
-                    aria-label="Remove address"
-                    title="Remove address"
-                    className="p-2.5 rounded-2xl text-gray-300 hover:text-red-400 hover:bg-red-50 transition-all shrink-0"
-                  >
-                    <TrashIcon className="w-4 h-4" />
-                  </button>
+                  <div className="flex items-center gap-1 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => startEdit(i)}
+                      aria-label="Edit address"
+                      title="Edit address"
+                      className="p-2.5 rounded-2xl text-gray-300 hover:text-rose-400 hover:bg-rose-50 transition-all"
+                    >
+                      <PencilIcon className="w-4 h-4" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setRemoveAddrIdx(i)}
+                      aria-label="Remove address"
+                      title="Remove address"
+                      className="p-2.5 rounded-2xl text-gray-300 hover:text-red-400 hover:bg-red-50 transition-all"
+                    >
+                      <TrashIcon className="w-4 h-4" />
+                    </button>
+                  </div>
                 </div>
               </motion.div>
             ))}
@@ -591,9 +636,9 @@ function ProfileContent() {
               <div className="bg-white rounded-3xl border-2 border-rose-200/60 shadow-lg shadow-rose-100/20 p-6 sm:p-7 space-y-5 animate-fade-in-up">
                 <div className="flex items-center gap-3 mb-1">
                   <div className="w-8 h-8 rounded-xl bg-rose-50 flex items-center justify-center">
-                    <PlusIcon className="w-4 h-4 text-rose-400" />
+                    {editingIdx !== null ? <PencilIcon className="w-4 h-4 text-rose-400" /> : <PlusIcon className="w-4 h-4 text-rose-400" />}
                   </div>
-                  <h3 className="font-black text-gray-900">New Address</h3>
+                  <h3 className="font-black text-gray-900">{editingIdx !== null ? 'Edit Address' : 'New Address'}</h3>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -604,6 +649,7 @@ function ProfileContent() {
                     { key: 'city',        label: 'City',                 placeholder: 'City',               full: false, required: true },
                     { key: 'state',       label: 'State',                placeholder: 'State',              full: false, required: true },
                     { key: 'pincode',     label: 'PIN Code',             placeholder: '6-digit PIN',        full: false, required: true },
+                    { key: 'phone',       label: 'Phone Number',         placeholder: '10-digit number',    full: false, required: true },
                   ] as { key: keyof Address; label: string; placeholder: string; full?: boolean; required: boolean }[]).map((f) => {
                     const suggestions = Array.from(new Set(
                       addresses.map((a) => a[f.key]).filter(Boolean)
@@ -647,14 +693,14 @@ function ProfileContent() {
                 <div className="flex flex-col sm:flex-row gap-3 pt-1">
                   <button
                     type="button"
-                    onClick={addAddress}
+                    onClick={saveAddress}
                     className="flex-1 sm:flex-none px-8 py-3.5 bg-gradient-to-r from-rose-400 to-pink-500 text-white text-sm font-black rounded-2xl shadow-lg shadow-rose-200/50 hover:shadow-xl hover:shadow-rose-300/40 hover:scale-[1.01] transition-all"
                   >
-                    Save Address
+                    {editingIdx !== null ? 'Update Address' : 'Save Address'}
                   </button>
                   <button
                     type="button"
-                    onClick={() => setShowAddForm(false)}
+                    onClick={cancelAddressForm}
                     className="flex-1 sm:flex-none px-8 py-3.5 border-2 border-gray-100 text-gray-500 text-sm font-bold rounded-2xl hover:border-gray-200 hover:text-gray-700 transition-all"
                   >
                     Cancel
@@ -664,7 +710,7 @@ function ProfileContent() {
             ) : (
               <button
                 type="button"
-                onClick={() => setShowAddForm(true)}
+                onClick={() => { setNewAddress(emptyAddress); setEditingIdx(null); setShowAddForm(true); }}
                 className="flex items-center justify-center gap-2.5 w-full py-5 border-2 border-dashed border-gray-200 rounded-3xl text-sm font-bold text-gray-400 hover:border-rose-300 hover:text-rose-500 hover:bg-rose-50/30 transition-all group"
               >
                 <span className="w-7 h-7 rounded-full bg-gray-100 group-hover:bg-rose-100 flex items-center justify-center transition-colors">

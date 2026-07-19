@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase, mapRow, mapRows } from '@/lib/supabase';
 import { getUserFromRequest } from '@/lib/auth';
+import { isSameAddressAndPhone } from '@/lib/addressDedupe';
 
 export async function GET(req: NextRequest) {
   try {
@@ -185,12 +186,15 @@ export async function POST(req: NextRequest) {
         .maybeSingle();
 
       const savedAddresses = (userData?.addresses as Record<string, string>[] | null) || [];
-      const isDuplicate = savedAddresses.some((a) => {
-        const addrKeys = ['doorNumber', 'streetName', 'city', 'state', 'pincode'] as const;
-        return addrKeys.every((k) => (a[k] || '').toLowerCase().trim() === ((shippingAddress[k] as string) || '').toLowerCase().trim());
-      });
+      const matchIdx = savedAddresses.findIndex((a) => isSameAddressAndPhone(a, shippingAddress));
 
-      if (!isDuplicate) {
+      let addressesToSave = savedAddresses;
+      let defaultIdx = matchIdx;
+
+      if (matchIdx === -1) {
+        // No entry with this exact address + phone combo yet — save it as a
+        // new entry (a different phone at the same address, or vice versa,
+        // is a distinct, valid combination).
         const newAddr = {
           doorNumber: shippingAddress.doorNumber || '',
           streetName: shippingAddress.streetName || '',
@@ -199,12 +203,18 @@ export async function POST(req: NextRequest) {
           state: shippingAddress.state || '',
           pincode: shippingAddress.pincode || '',
           country: shippingAddress.country || 'India',
+          phone: shippingAddress.phone || '',
         };
-        await supabase
-          .from('users')
-          .update({ addresses: [...savedAddresses, newAddr] })
-          .eq('id', payload.id as string);
+        addressesToSave = [...savedAddresses, newAddr];
+        defaultIdx = addressesToSave.length - 1;
       }
+
+      // The address used for this order becomes the default, so it's
+      // pre-filled automatically next time the customer checks out.
+      await supabase
+        .from('users')
+        .update({ addresses: addressesToSave, default_address: defaultIdx })
+        .eq('id', payload.id as string);
     } catch (addrErr) {
       console.error('Auto-save address error:', addrErr);
     }
