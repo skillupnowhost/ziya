@@ -23,6 +23,7 @@ const navItems = [
   { label: 'Products', href: '/admin/products', icon: CubeIcon },
   { label: 'Orders', href: '/admin/orders', icon: ShoppingBagIcon },
   { label: 'Customers', href: '/admin/customers', icon: UsersIcon },
+  { label: 'Reviews', href: '/admin/reviews', icon: ClipboardDocumentListIcon },
   { label: 'Promo Codes', href: '/admin/promo-codes', icon: TagIcon },
   { label: 'Coupon Logs', href: '/admin/coupon-logs', icon: ClipboardDocumentListIcon },
   { label: 'Settings', href: '/admin/settings', icon: Cog6ToothIcon },
