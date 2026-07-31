@@ -27,6 +27,7 @@ const navLinks = [
   { label: 'Accessories', href: '/products?category=accessories' },
   { label: 'Stationery', href: '/products?category=stationery' },
   { label: 'Dresses', href: '/products?category=dresses' },
+  { label: 'About', href: '/about' },
 ];
 
 export default function Navbar() {

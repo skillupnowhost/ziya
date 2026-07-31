@@ -207,9 +207,7 @@ export default function ProductDetailClient() {
           reviewMediaFiles.map(async (file) => {
             const fd = new FormData();
             fd.append('file', file);
-            const res = await axios.post('/api/upload/review-media', fd, {
-              headers: { 'Content-Type': 'multipart/form-data' },
-            });
+            const res = await axios.post('/api/upload/review-media', fd);
             return res.data as { url: string; type: 'image' | 'video' };
           })
         );

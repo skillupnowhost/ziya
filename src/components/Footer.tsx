@@ -21,6 +21,7 @@ const support = [
   { label: 'Shipping Policy', href: '/shipping' },
   { label: 'Track Order', href: '/track-order' },
   { label: 'Contact Us', href: '/contact' },
+  { label: 'About', href: '/about' },
 ];
 
 const socials = [
