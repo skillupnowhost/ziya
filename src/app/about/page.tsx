@@ -53,17 +53,10 @@ export default function AboutPage() {
             ))}
           </div>
 
-          <div className="rounded-[1.75rem] border border-rose-200 bg-rose-50 p-5 sm:p-6">
-            <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2">No extra platform fees for curated jewellery and handbag bundles</h2>
-            <p className="text-gray-600 leading-7">
-              Antique jewellery, handbags, and curated combo bundles are included as part of our curated collection — with no additional charges beyond the product price and standard shipping or packaging fees at checkout.
-            </p>
-          </div>
+          
 
           <div className="mt-6 text-sm text-gray-500 space-y-3">
-            <p>
-              Want a dedicated category page for antique jewellery, handbags, or curated gift bundles? We can highlight those collections with clear shopping paths and rich visuals.
-            </p>
+           
             <p>
               For questions or personalized styling help, visit the{' '}
               <Link href="/contact" className="font-semibold text-rose-600 hover:text-rose-700">Contact Us</Link>{' '}
