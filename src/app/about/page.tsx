@@ -8,8 +8,8 @@ export default function AboutPage() {
         <div className="rounded-[1.75rem] overflow-hidden border border-gray-200 shadow-lg bg-white">
           <div className="relative aspect-[4/5] sm:aspect-[3/4] lg:aspect-[5/6] bg-gray-50">
             <Image
-              src="/about-us.jpeg"
-              alt="About Ziyakart founders"
+              src="/Uma%20Ziyakart.jpg"
+              alt="Uma Ziyakart"
               fill
               className="object-contain"
               sizes="(max-width: 1024px) 100vw, 45vw"
