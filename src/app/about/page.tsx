@@ -5,13 +5,13 @@ export default function AboutPage() {
   return (
     <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10">
       <section className="grid gap-6 lg:grid-cols-[0.95fr_1.05fr] items-center">
-        <div className="rounded-[1.75rem] overflow-hidden border border-gray-200 shadow-lg bg-white">
-          <div className="relative aspect-[4/5] sm:aspect-[3/4] lg:aspect-[5/6] bg-gray-50">
+        <div className="rounded-[1.75rem] border border-gray-200 bg-[#f7f3f2] p-2.5 sm:p-3 shadow-[0_18px_45px_rgba(15,23,42,0.06)]">
+          <div className="relative aspect-[4/4.7] sm:aspect-[3/3.9] lg:aspect-[5/5.8] overflow-hidden rounded-[1.3rem] bg-[#f3efee]">
             <Image
               src="/Uma%20Ziyakart.jpg"
               alt="Uma Ziyakart"
               fill
-              className="object-contain"
+              className="object-cover object-center"
               sizes="(max-width: 1024px) 100vw, 45vw"
             />
           </div>
